@@ -590,7 +590,7 @@ const PMU_BASE_PARTS = '/api/pmu/parts';
 
 const CFG = {
   progRefreshSecs:  120,   // intervalle de rafraîchissement du programme (secondes)
-  snapSecs:         30,    // snapshot automatique N secondes avant le départ
+  snapSecs:         60,    // snapshot automatique N secondes avant le départ
   fetchTimeoutMs:   1500,  // timeout d'une requête API (ms)
   parallelFetches:  2,     // nb de requêtes en parallèle (racing pattern)
   progCacheTtlMs:   90000, // durée de vie du cache programme JS (ms)
@@ -859,15 +859,15 @@ function doSnapshot() {
 }
 
 // ── TELEGRAM ─────────────────────────────────────────────
-// Envoie un message à tous les chat IDs configurés.
-// Conditions pour envoyer :
+// Passe par le proxy serveur Node.js (/api/telegram/send) pour que
+// les notifications soient envoyées CÔTÉ SERVEUR — même navigateur fermé.
+// Conditions :
 //   - Telegram activé (S.tgOn)
-//   - snapDone = true (on est dans la fenêtre ou après snapshot)
-//   - Cote FINALE <= CFG.tgMaxCote  (peu importe la cote snap)
+//   - snapDone = true
+//   - Cote FINALE <= CFG.tgMaxCote
 //   - Chute >= DROP_PCT%
 async function sendTelegram(horse, snap, cur, dropPct, race, secsLeft) {
   if (!S.tgOn) return;
-  const apiBase  = `https://api.telegram.org/bot${CFG.tgToken}/sendMessage`;
   const raceLabel = `R${race.reunion}C${race.course}`;
   const hip       = race.hip ? `${race.hip} — ` : '';
   const secsStr   = secsLeft > 0 ? `⏱ ${secsLeft}s avant départ` : '🚨 DÉPART IMMINENT';
@@ -878,8 +878,36 @@ async function sendTelegram(horse, snap, cur, dropPct, race, secsLeft) {
     `${hip}${race.libelle}\n` +
     `${secsStr}`;
 
-  addAlert('info', '✈️', `Envoi Telegram → ${CFG.tgChatIds.join(', ')}…`);
+  addAlert('info', '✈️', `Envoi Telegram (serveur) → ${CFG.tgChatIds.join(', ')}…`);
 
+  try {
+    const r = await fetch('/api/telegram/send', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        token:   CFG.tgToken,
+        chatIds: CFG.tgChatIds,
+        text,
+      }),
+    });
+    const json = await r.json();
+    if (r.ok && json.ok) {
+      addAlert('info', '✅', `Telegram envoyé (serveur) — ${horse.nom}`);
+    } else {
+      // Fallback : appel direct depuis le navigateur si le serveur échoue
+      addAlert('info', '⚠️', `Serveur TG échoué (${json.error || r.status}), fallback navigateur…`);
+      await _sendTelegramDirect(text);
+    }
+  } catch (e) {
+    // Fallback réseau : appel direct
+    addAlert('info', '⚠️', `Serveur TG injoignable, fallback navigateur…`);
+    await _sendTelegramDirect(text);
+  }
+}
+
+// Fallback : envoi direct depuis le navigateur (si le serveur est KO)
+async function _sendTelegramDirect(text) {
+  const apiBase = `https://api.telegram.org/bot${CFG.tgToken}/sendMessage`;
   let allOk = true;
   for (const chatId of CFG.tgChatIds) {
     try {
@@ -890,15 +918,15 @@ async function sendTelegram(horse, snap, cur, dropPct, race, secsLeft) {
       });
       const json = await r.json();
       if (!r.ok || !json.ok) {
-        addAlert('info', '❌', `TG erreur chat ${chatId} : ${json.description || r.status}`);
+        addAlert('info', '❌', `TG direct erreur chat ${chatId} : ${json.description || r.status}`);
         allOk = false;
       }
     } catch (e) {
-      addAlert('info', '❌', `TG exception chat ${chatId} : ${e.message}`);
+      addAlert('info', '❌', `TG direct exception chat ${chatId} : ${e.message}`);
       allOk = false;
     }
   }
-  if (allOk) addAlert('info', '✅', `Telegram envoyé — ${horse.nom}`);
+  if (allOk) addAlert('info', '✅', `Telegram envoyé (direct) — fallback OK`);
 }
 
 // ── DÉTECTION DES CHUTES ────────────────────────────────
