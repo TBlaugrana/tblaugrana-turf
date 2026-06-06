@@ -338,11 +338,13 @@ body {
   background: var(--surface3);
   border-top: 1px solid var(--border);
   flex-shrink: 0;
-  overflow: hidden;
-  max-height: 116px; /* header ~28px + 4 × ~22px items */
+  overflow-y: auto;
+  max-height: 210px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
 #alerts-hd {
-  padding: 5px 12px;
+  padding: 6px 12px;
   font-size: 10px;
   letter-spacing: 2px;
   color: var(--text2);
@@ -352,8 +354,11 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(17,21,32,.95);
+  background: rgba(17,21,32,.97);
   border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 .abadge {
   background: var(--red);
@@ -380,26 +385,155 @@ body {
   text-transform: uppercase;
 }
 #clr-btn:hover { color:var(--text2); }
+
+/* Carte alerte façon Telegram */
 .aitem {
-  padding: 4px 12px;
-  font-size: 13px;
-  display: flex;
-  align-items: flex-start;
-  gap: 5px;
-  border-bottom: 1px solid rgba(30,37,64,.5);
-  animation: slideIn .2s ease;
+  margin: 6px 10px;
+  border-radius: 10px;
+  animation: slideIn .25s ease;
+  overflow: hidden;
 }
-.atime { font-family:var(--font-mono); font-size:10px; color:var(--text3); flex-shrink:0; padding-top:2px; }
-.aicon { flex-shrink:0; font-size:11px; }
-.amsg  { flex:1; line-height:1.3; }
-.aitem.drop { border-left:2px solid var(--green); background:rgba(31,212,126,.03); }
-.aitem.drop .amsg { color:var(--green); }
-.aitem.snap { border-left:2px solid var(--yellow); background:rgba(245,192,64,.03); }
-.aitem.snap .amsg { color:var(--yellow); }
-.aitem.srv  { border-left:2px solid var(--accent2); background:rgba(61,142,240,.03); }
-.aitem.srv  .amsg { color:var(--accent2); }
-.aitem.info { border-left:2px solid var(--border2); }
-.aitem.info .amsg { color:var(--text2); }
+.aitem.drop {
+  background: linear-gradient(135deg, rgba(15,30,20,.95) 0%, rgba(10,22,16,.95) 100%);
+  border: 1px solid rgba(31,212,126,.25);
+  box-shadow: 0 2px 12px rgba(0,0,0,.4), inset 0 1px 0 rgba(31,212,126,.08);
+}
+.aitem.info {
+  background: rgba(22,27,44,.7);
+  border: 1px solid rgba(40,51,82,.6);
+}
+.acard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px 4px;
+  border-bottom: 1px solid rgba(31,212,126,.1);
+}
+.acard-key {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent2);
+  letter-spacing: 2px;
+}
+.acard-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+}
+.acard-body {
+  padding: 6px 10px 8px;
+}
+.acard-horse {
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: .3px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.acard-horse-num {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text3);
+  background: rgba(255,255,255,.06);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.acard-cotes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+}
+.acard-cote-from {
+  font-size: 18px;
+  color: var(--text2);
+  text-decoration: line-through;
+  text-decoration-color: rgba(240,68,85,.5);
+}
+.acard-arrow {
+  font-size: 16px;
+  color: var(--green);
+}
+.acard-cote-to {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--green);
+  text-shadow: 0 0 10px rgba(31,212,126,.4);
+}
+.acard-drop-pct {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--green);
+  background: rgba(31,212,126,.1);
+  border: 1px solid rgba(31,212,126,.2);
+  padding: 2px 7px;
+  border-radius: 20px;
+  margin-left: auto;
+}
+.acard-hip {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  letter-spacing: .5px;
+}
+
+/* Carte arrivée provisoire */
+.aitem.arrival {
+  background: linear-gradient(135deg, rgba(20,22,40,.95) 0%, rgba(14,16,30,.95) 100%);
+  border: 1px solid rgba(91,163,255,.2);
+  box-shadow: 0 2px 12px rgba(0,0,0,.4);
+}
+.acard-arrival-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--accent2);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.acard-arrival-horses {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.acard-arrival-pos {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(61,142,240,.08);
+  border: 1px solid rgba(61,142,240,.15);
+  border-radius: 6px;
+  padding: 4px 8px;
+  min-width: 44px;
+}
+.acard-arrival-rank {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 1px;
+}
+.acard-arrival-num {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent2);
+  line-height: 1.2;
+}
+.acard-arrival-name {
+  font-size: 9px;
+  color: var(--text3);
+  text-align: center;
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* ── LOADING ── */
 #loading {
@@ -516,7 +650,7 @@ const CFG = {
   fetchTimeoutMs:   1500,
   parallelFetches:  2,
   progCacheTtlMs:   90000,
-  maxAlerts:        4,
+  maxAlerts:        10,
   dropPct:          20,    // fixe — modifiable en dur ici si besoin
   tgMaxCote:        10,
 };
@@ -684,29 +818,24 @@ async function syncSnapFromServer(race) {
 }
 
 // ── POLL ALERTES SERVEUR ──────────────────────────────
-// Récupère les alertes générées côté serveur (notamment quand l'onglet est fermé)
-// et les affiche dans le panneau front + joue un bip.
 async function pollSrvAlerts() {
   try {
     const r=await fetch('/api/alerts');
     if(!r.ok) return;
     const alerts=await r.json();
-    // Affiche les nouvelles alertes (pas encore vues) — les plus récentes en premier
     for(const a of alerts) {
       const key=a.ts+a.msg;
       if(S.srvAlertsSeen.has(key)) continue;
       S.srvAlertsSeen.add(key);
-    // N'affiche que drop (pas snap, pas infos système)
       if(a.type==='drop') {
-        // Parse la cote finale depuis le message ex: "NOM chute 34→26 (−24%)"
         const coteMatch = a.msg.match(/→(\d+(?:\.\d+)?)\s*\(/);
         const coteFinal = coteMatch ? parseFloat(coteMatch[1]) : null;
-        // Ignorer si cote finale > tgMaxCote (même règle que Telegram)
         if(coteFinal !== null && coteFinal > CFG.tgMaxCote) continue;
-        addAlert('drop','🔥',`[SRV] ${a.msg}`); alertBeep();
+        const time = a.ts ? a.ts.slice(11,19) : timeNow();
+        addAlertFromSrvMsg(a.msg, time);
+        alertBeep();
       }
     }
-    // Mise à jour indicateur serveur
     document.getElementById('srv-status').className='';
     document.getElementById('srv-status').textContent='SRV ●';
   } catch(_) {
@@ -811,25 +940,142 @@ function renderTable() {
 }
 
 // ── ALERTES ───────────────────────────────────────────
-function addAlert(type,icon,msg) {
+function addAlert(type, icon, msg, opts={}) {
   // Masquer les alertes de chargement de programme
   if(type==='info' && (msg.startsWith('Programme :') || msg.includes('courses') || msg.startsWith('Aucun'))) return;
-  // Masquer les snapshots [SRV] — on garde seulement les drops et snapshots locaux
   if(type==='snap' && msg.startsWith('[SRV]')) return;
-  const list=document.getElementById('alerts-list');
-  const item=document.createElement('div');
-  item.className=`aitem ${type}`;
-  item.innerHTML=`<span class="atime">${timeNow()}</span><span class="aicon">${icon}</span><span class="amsg">${msg}</span>`;
+
+  const list = document.getElementById('alerts-list');
+  const item = document.createElement('div');
+  item.className = `aitem ${type}`;
+
+  if(type === 'drop') {
+    // Parse le message serveur : "[R2C1] NOM chute 34→26 (−24%)"
+    // ou message simple : "NOM — 34→26 (−24%)"
+    const keyMatch  = msg.match(/^\[([^\]]+)\]\s*/);
+    const raceKey   = opts.raceKey || (keyMatch ? keyMatch[1] : '');
+    const cleanMsg  = keyMatch ? msg.slice(keyMatch[0].length) : msg;
+    const numMatch  = cleanMsg.match(/^(\d+)\s*[—–-]\s*/);
+    const horseNum  = opts.num || (numMatch ? numMatch[1] : '');
+    const afterNum  = numMatch ? cleanMsg.slice(numMatch[0].length) : cleanMsg;
+    const nameMatch = afterNum.match(/^(.+?)\s+chute\s+([\d.]+)→([\d.]+)\s*\(([-−]\d+)%\)/);
+    const horseName = opts.name || (nameMatch ? nameMatch[1] : afterNum);
+    const fromCote  = opts.from || (nameMatch ? nameMatch[2] : '');
+    const toCote    = opts.to   || (nameMatch ? nameMatch[3] : '');
+    const dropPct   = opts.pct  || (nameMatch ? nameMatch[4] : '');
+    const hip       = opts.hip  || '';
+    const time      = opts.time || timeNow();
+
+    item.innerHTML = `
+      <div class="acard-header">
+        <span class="acard-key">🚨 ${raceKey}</span>
+        <span class="acard-time">${time}</span>
+      </div>
+      <div class="acard-body">
+        <div class="acard-horse">
+          ${horseNum ? `<span class="acard-horse-num">${horseNum}</span>` : ''}
+          <span>${horseName}</span>
+        </div>
+        <div class="acard-cotes">
+          <span class="acard-cote-from">${fromCote}</span>
+          <span class="acard-arrow">➡️</span>
+          <span class="acard-cote-to">${toCote}</span>
+          <span class="acard-drop-pct">${dropPct}%</span>
+        </div>
+        ${hip ? `<div class="acard-hip">📍 ${hip}</div>` : ''}
+      </div>`;
+  } else if(type === 'arrival') {
+    const time = opts.time || timeNow();
+    item.innerHTML = `
+      <div class="acard-header">
+        <span class="acard-key">🏁 ${opts.raceKey||''}</span>
+        <span class="acard-time">${time}</span>
+      </div>
+      <div class="acard-body">
+        <div class="acard-arrival-title">ARRIVÉE PROVISOIRE</div>
+        <div class="acard-arrival-horses">
+          ${(opts.horses||[]).map((h,i)=>`
+            <div class="acard-arrival-pos">
+              <span class="acard-arrival-rank">${i+1}${i===0?'er':'e'}</span>
+              <span class="acard-arrival-num">${h.num}</span>
+              <span class="acard-arrival-name">${h.name}</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  } else {
+    item.innerHTML = `<div class="acard-body" style="padding:6px 10px"><span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">${timeNow()}</span> <span style="font-size:13px;color:var(--text2)">${icon} ${msg}</span></div>`;
+  }
+
   list.prepend(item);
-  while(list.children.length>CFG.maxAlerts) list.removeChild(list.lastChild);
-  if(type!=='info') {
+  while(list.children.length > CFG.maxAlerts) list.removeChild(list.lastChild);
+
+  if(type !== 'info') {
     S.alertCount++;
-    const badge=document.getElementById('abadge');
-    badge.textContent=S.alertCount;
-    badge.style.display='inline';
+    const badge = document.getElementById('abadge');
+    badge.textContent = S.alertCount;
+    badge.style.display = 'inline';
   }
 }
 function clearAlerts() { document.getElementById('alerts-list').innerHTML=''; S.alertCount=0; document.getElementById('abadge').style.display='none'; }
+
+// ── ARRIVÉE PROVISOIRE ────────────────────────────────
+// Vérifie si la course qui vient de se terminer a une arrivée provisoire
+const _arrivalSeen = new Set();
+async function checkArrival(race) {
+  const key = `R${race.reunion}C${race.course}`;
+  if(_arrivalSeen.has(key)) return;
+  try {
+    const url = `/api/pmu/parts/programme/${datePmu(S.today)}/R${race.reunion}/C${race.course}/rapports-definitifs?specialisation=OFFLINE`;
+    const r = await fetch(url, {cache:'no-store'});
+    if(!r.ok) return;
+    const data = await r.json();
+    // Cherche l'arrivée dans les rapports
+    const rapports = data.rapports || data.listeRapports || [];
+    const arrivee = rapports.find(r => r.typePari==='SIMPLE_GAGNANT' || r.combinaison);
+    if(!arrivee) return;
+    const nums = arrivee.combinaison || [];
+    if(!nums.length) return;
+    _arrivalSeen.add(key);
+    // Récupère les noms depuis S.participants (ou juste les numéros)
+    const horses = nums.slice(0,4).map(n => {
+      const p = S.participants.find(x => x.numPmu === n);
+      return { num: n, name: p ? p.nom.split(' ').slice(0,2).join(' ') : `N°${n}` };
+    });
+    addAlert('arrival','🏁','', { raceKey: key, horses });
+  } catch(_){}
+}
+
+// ── CHARGEMENT HISTORIQUE ALERTES AU DÉMARRAGE ────────
+async function loadAlertHistory() {
+  try {
+    const r = await fetch('/api/alerts');
+    if(!r.ok) return;
+    const alerts = await r.json();
+    // Affiche en ordre chronologique (le plus récent en dernier dans le tableau, premier à l'écran)
+    for(const a of [...alerts].reverse()) {
+      const key = a.ts + a.msg;
+      S.srvAlertsSeen.add(key);
+      if(a.type !== 'drop') continue;
+      const coteMatch = a.msg.match(/→(\d+(?:\.\d+)?)\s*\(/);
+      const coteFinal = coteMatch ? parseFloat(coteMatch[1]) : null;
+      if(coteFinal !== null && coteFinal > CFG.tgMaxCote) continue;
+      const time = a.ts ? a.ts.slice(11,19) : '—';
+      addAlertFromSrvMsg(a.msg, time);
+    }
+  } catch(_){}
+}
+
+function addAlertFromSrvMsg(msg, time) {
+  // msg format: "[R2C1] NOM chute 34→26 (−24%)"
+  const keyMatch = msg.match(/^\[([^\]]+)\]\s*/);
+  const raceKey  = keyMatch ? keyMatch[1] : '';
+  const rest     = keyMatch ? msg.slice(keyMatch[0].length) : msg;
+  const m = rest.match(/^(.+?)\s+chute\s+([\d.]+)→([\d.]+)\s*\(([-−]\d+)%\)/);
+  if(!m) { addAlert('drop','🔥', msg, {time}); return; }
+  addAlert('drop','🔥', msg, {
+    raceKey, name: m[1], from: m[2], to: m[3], pct: m[4], time
+  });
+}
 
 // ── STATUS ────────────────────────────────────────────
 function setStatus(ok) { document.getElementById('status-dot').className=ok?'':'err'; }
@@ -978,6 +1224,10 @@ async function tick() {
     syncSnapFromServer(race);
   }
 
+  // Arrivée provisoire : vérifie 2min après le départ
+  const secsAfter = -secsLeft;
+  if(secsAfter >= 120 && secsAfter <= 600) checkArrival(race);
+
   // Refresh programme périodique
   if(S.tick%CFG.progRefreshSecs===0) {
     delete _progCache[S.today];
@@ -1021,6 +1271,8 @@ async function boot() {
   if(S.programme.length>0){_lastAutoIdx=findNext();S.manualIdx=-1;updateNav();}
 
   document.getElementById('loading').style.display='none';
+  // Charge l'historique des alertes serveur (persistance au rechargement)
+  await loadAlertHistory();
   // Poll initial alertes serveur
   pollSrvAlerts();
   tick();
