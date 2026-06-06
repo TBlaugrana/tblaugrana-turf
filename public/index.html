@@ -322,11 +322,15 @@ body {
   background: var(--surface3);
   border-top: 1px solid var(--border);
   flex-shrink: 0;
-  overflow-y: auto;
-  max-height: 185px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+#alerts-list {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 #alerts-hd {
   padding: 6px 12px;
@@ -341,9 +345,6 @@ body {
   gap: 6px;
   background: rgba(12,16,32,.97);
   border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 2;
   min-height: 32px;
 }
 .abadge {
@@ -375,10 +376,11 @@ body {
 
 /* ── ALERT CARDS ── */
 .aitem {
-  margin: 5px 8px;
+  margin: 4px 8px;
   border-radius: 8px;
   animation: slideIn .2s ease;
   overflow: hidden;
+  flex-shrink: 0;
 }
 .aitem.drop {
   background: linear-gradient(135deg, rgba(13,26,18,.95) 0%, rgba(9,19,14,.95) 100%);
@@ -608,7 +610,7 @@ const CFG = {
   fetchTimeoutMs:   1500,
   parallelFetches:  2,
   progCacheTtlMs:   90000,
-  maxAlerts:        10,
+  maxAlerts:        3,
   dropPct:          20,    // fixe — modifiable en dur ici si besoin
   tgMaxCote:        10,
 };
