@@ -1,8 +1,0 @@
-services:
-  - type: web
-    name: tblaugrana-turf
-    env: node
-    plan: free
-    buildCommand: npm install
-    startCommand: node server.js
-    healthCheckPath: /health
