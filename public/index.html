@@ -177,22 +177,47 @@ body {
   margin-top: 1px;
 }
 
-/* ── COUNTDOWN (maintenant sous race-code+race-name) ── */
-#cd-wrap {
+/* ── OLD COUNTDOWN CSS removed — now in #depart-bar ── */
+
+/* ── FILTER BAR ── */
+#filter-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 5px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
   flex-shrink: 0;
-  text-align: right;
+}
+
+/* ── DÉPART BAR ── */
+#depart-bar {
+  background: linear-gradient(180deg, rgba(17,21,32,.98) 0%, rgba(13,17,28,.98) 100%);
+  border-bottom: 1px solid rgba(61,142,240,.2);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-shrink: 0;
+  position: relative;
+}
+#depart-bar::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 20%; right: 20%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(31,212,126,.25), transparent);
 }
 #cd-label {
   font-size: 11px;
   color: var(--text3);
-  letter-spacing: 2px;
-  margin-bottom: 1px;
+  letter-spacing: 3px;
   text-transform: uppercase;
   font-family: var(--font-mono);
 }
 #countdown {
   font-family: var(--font-mono);
-  font-size: 39px;
+  font-size: 36px;
   font-weight: 700;
   color: var(--green);
   line-height: 1;
@@ -211,20 +236,7 @@ body {
   padding: 2px 6px;
   border-radius: 3px;
   letter-spacing: 1px;
-  margin-top: 3px;
-  text-align: center;
   animation: glow 2s infinite;
-}
-
-/* ── FILTER BAR (simplifié — sans cote max, alerte son, telegram, test) ── */
-#filter-bar {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 7px 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
 }
 #ts {
   font-family: var(--font-mono);
@@ -306,6 +318,8 @@ body {
 .cdrop.warm { color:var(--yellow); }
 .cdrop.low  { color:var(--text3); font-weight:400; }
 .cdrop.up   { color:var(--red); font-size:15px; }
+.horse.appeared { background:rgba(245,192,64,.06); }
+.horse.appeared::before { width:3px; background:var(--yellow); }
 .horse.alerted { background:rgba(31,212,126,.05); }
 .horse.alerted::before { width:3px; background:var(--green); }
 
@@ -315,6 +329,7 @@ body {
   border-top: 1px solid var(--border);
   flex-shrink: 0;
   overflow: hidden;
+  max-height: 116px; /* header ~28px + 4 × ~22px items */
 }
 #alerts-hd {
   padding: 5px 12px;
@@ -434,23 +449,23 @@ input[type=number]::-webkit-outer-spin-button { opacity:.3; }
     <div id="race-code">—</div>
     <div id="race-name">—</div>
     <div id="race-sub"></div>
-    <!-- DÉPART juste sous la description de course -->
     <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
       <span id="race-counter" style="font-family:var(--font-mono);font-size:12px;color:var(--text3)"></span>
-      <span id="cd-label" style="font-size:11px;color:var(--text3);letter-spacing:2px;font-family:var(--font-mono);text-transform:uppercase">DÉPART</span>
-      <span id="countdown" style="font-family:var(--font-mono);font-size:26px;font-weight:700;color:var(--green);line-height:1;letter-spacing:-1px;text-shadow:0 0 14px rgba(31,212,126,.35)">--:--</span>
-      <span id="snap-badge" style="display:none;background:rgba(245,192,64,.1);border:1px solid rgba(245,192,64,.4);color:var(--yellow);font-size:11px;font-family:var(--font-mono);padding:2px 6px;border-radius:3px;letter-spacing:1px;animation:glow 2s infinite">📸 SNAP</span>
     </div>
   </div>
   <button class="nav-btn" id="btn-next" disabled title="Course suivante">›</button>
 </div>
 
+<!-- DÉPART BAR — centré, standalone -->
+<div id="depart-bar">
+  <span id="cd-label">DÉPART</span>
+  <span id="countdown">--:--</span>
+  <span id="snap-badge">📸 SNAP</span>
+</div>
+
 <!-- FILTER BAR (épuré) -->
 <div id="filter-bar">
-  <span class="flabel" style="font-size:12px;color:var(--text3);letter-spacing:1px;font-family:var(--font-mono);text-transform:uppercase">ALERTE</span>
-  <span id="drop-pct-display" style="font-family:var(--font-mono);font-size:15px;color:var(--green)">≥20%</span>
-  <span style="width:1px;height:16px;background:var(--border);flex-shrink:0;display:inline-block"></span>
-  <span id="ts">—</span>
+  <span id="ts" style="margin-left:auto">—</span>
 </div>
 
 <!-- TABLE HEADER -->
@@ -493,7 +508,7 @@ const CFG = {
   fetchTimeoutMs:   1500,
   parallelFetches:  2,
   progCacheTtlMs:   90000,
-  maxAlerts:        8,
+  maxAlerts:        4,
   dropPct:          20,    // fixe — modifiable en dur ici si besoin
   tgMaxCote:        10,
 };
@@ -723,8 +738,18 @@ function renderTable() {
     if(db!==-9999) return 1;
     return(a.dernierRapportDirect?.rapport??9999)-(b.dernierRapportDirect?.rapport??9999);
   });
-  // Pas de filtre max-cote : on affiche tout
-  const visible=sorted.filter(p=>p.dernierRapportDirect?.rapport!=null||p.statut==='PARTANT');
+  // Hide horses with cote > 10 UNLESS they dropped below 10 (were above, now below)
+  const visible=sorted.filter(p=>{
+    if(p.statut!=='PARTANT') return true; // non-partants always visible (dimmed)
+    const cur=p.dernierRapportDirect?.rapport;
+    if(cur==null) return false;
+    const snap=S.snapCotes[p.numPmu];
+    // If current cote is <= 10, always show
+    if(cur<=10) return true;
+    // If snapshot was > 10 and current still > 10, hide
+    // But if snapshot was > 10 and current just crossed below, show (handled above)
+    return false;
+  });
   const visIds=new Set(visible.map(p=>`row-${p.numPmu}`));
   for(const row of [...container.children]) if(!visIds.has(row.id)) row.remove();
 
@@ -735,6 +760,8 @@ function renderTable() {
     const cd=p.dernierRapportDirect?.rapport??'—';
     const snap=S.snapCotes[p.numPmu];
     const cs=snap??'—';
+    // "appeared" = was hidden (snap > 10) but now dropped below 10
+    const appeared = snap!=null && snap>10 && cd!=='—' && cd<=10;
     let cdColor='var(--text)',dropTxt='',dropClass='';
     if(snap!=null&&cd!=='—') {
       const dr=(snap-cd)/snap*100;
@@ -742,12 +769,13 @@ function renderTable() {
       else if(dr<0) { dropTxt=`+${Math.abs(dr).toFixed(1)}%`; dropClass='up'; }
       else dropTxt='0%';
     }
+    const appearedBadge = appeared ? `<span class="appeared-badge">↓</span>` : '';
     let row=document.getElementById(`row-${p.numPmu}`);
     if(!row) {
       row=document.createElement('div');
       row.id=`row-${p.numPmu}`;
-      row.className=`horse${np?' np':''}${fav?' fav':''}`;
-      row.innerHTML=`<span class="hnum">${p.numPmu}</span><div><div class="hname">${p.nom}</div></div><span class="cdirect" style="color:${cdColor}">${cd}</span><span class="csnap">${cs}</span><span class="cdrop ${dropClass}">${dropTxt||'—'}</span>`;
+      row.className=`horse${np?' np':''}${fav?' fav':''}${appeared?' appeared':''}`;
+      row.innerHTML=`<span class="hnum">${p.numPmu}</span><div><div class="hname">${p.nom}${appearedBadge}</div></div><span class="cdirect" style="color:${cdColor}">${cd}</span><span class="csnap">${cs}</span><span class="cdrop ${dropClass}">${dropTxt||'—'}</span>`;
       container.appendChild(row);
     } else {
       const cells=row.children;
@@ -761,6 +789,7 @@ function renderTable() {
       if(celDrop.className!==dc) celDrop.className=dc;
     }
     row.classList.toggle('alerted',S.alertedDrop.has(p.numPmu));
+    row.classList.toggle('appeared', appeared);
     if(container.children[i]!==row) container.insertBefore(row,container.children[i]||null);
   }
 }
