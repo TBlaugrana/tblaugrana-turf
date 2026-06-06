@@ -2,7 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TBlaugranaTurf">
+<meta name="theme-color" content="#0b0f1a">
 <title>TBlaugranaTurf</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230b0f1a'/%3E%3Ctext y='50' x='5' font-size='50'%3E🐎%3C/text%3E%3C/svg%3E">
@@ -184,20 +188,34 @@ body {
 /* ── MOBILE ADAPTATIONS ── */
 @media (max-width: 480px) {
   body { font-size: 15px; }
-  .logo { font-size: 22px; letter-spacing: 2px; }
-  .logo-horse { font-size: 22px; }
-  #race-name { font-size: 17px; }
+  .logo { font-size: 20px; letter-spacing: 2px; }
+  .logo-horse { font-size: 20px; }
+  #race-bar { padding: 8px 8px; }
+  #race-name { font-size: 16px; }
   #race-code { font-size: 11px; }
-  #countdown { font-size: 42px; }
-  #cd-label { font-size: 11px; letter-spacing: 2px; }
-  .nav-btn { width:30px; height:30px; font-size:18px; }
-  .hname { font-size: 15px; }
-  .cdirect { font-size: 18px; }
-  .csnap, .cdrop { font-size: 13px; }
-  #th { font-size: 10px; padding: 5px 10px; }
-  .horse { padding: 10px 10px; }
-  #alerts { max-height: 104px; }
-  .aitem { padding: 3px 10px; font-size: 12px; }
+  #race-sub  { font-size: 13px; }
+  #countdown { font-size: 38px; }
+  #cd-label  { font-size: 10px; letter-spacing: 2px; }
+  #depart-bar { padding: 10px 8px; }
+  .nav-btn { width:32px; height:32px; font-size:20px; }
+  .hname { font-size: 14px; }
+  .cdirect { font-size: 17px; }
+  .csnap, .cdrop { font-size: 12px; }
+  #th { font-size: 10px; padding: 5px 8px; grid-template-columns: 26px 1fr 55px 48px 56px; }
+  .horse { padding: 9px 8px; grid-template-columns: 26px 1fr 55px 48px 56px; }
+  /* alertes mobile — cartes moins hautes */
+  #alerts { max-height: 200px; }
+  .aitem { margin: 5px 8px; }
+  .acard-header { padding: 5px 8px 3px; }
+  .acard-body { padding: 5px 8px 7px; }
+  .acard-horse { font-size: 14px; }
+  .acard-cote-from { font-size: 16px; }
+  .acard-cote-to { font-size: 19px; }
+  .acard-drop-pct { font-size: 12px; }
+  .acard-arrival-num { font-size: 15px; }
+  /* header compact */
+  #header { padding: 8px 10px; }
+  #srv-status { font-size: 9px; }
 }
 
 /* ── DÉPART BAR ── */
