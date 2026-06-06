@@ -27,7 +27,7 @@
   --font-ui:   'Rajdhani', sans-serif;
 }
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-html, body { height:100%; overflow:hidden; }
+html, body { height:100%; overflow:hidden; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 body {
   background: var(--bg);
   color: var(--text);
@@ -36,6 +36,8 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
+  padding-bottom: env(safe-area-inset-bottom);
   background-image:
     radial-gradient(ellipse at 50% 0%, rgba(61,142,240,.07) 0%, transparent 55%),
     radial-gradient(ellipse at 50% 100%, rgba(31,212,126,.04) 0%, transparent 50%);
@@ -179,26 +181,34 @@ body {
 
 /* ── OLD COUNTDOWN CSS removed — now in #depart-bar ── */
 
-/* ── FILTER BAR ── */
-#filter-bar {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 5px 12px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-shrink: 0;
+/* ── MOBILE ADAPTATIONS ── */
+@media (max-width: 480px) {
+  body { font-size: 15px; }
+  .logo { font-size: 22px; letter-spacing: 2px; }
+  .logo-horse { font-size: 22px; }
+  #race-name { font-size: 17px; }
+  #race-code { font-size: 11px; }
+  #countdown { font-size: 42px; }
+  #cd-label { font-size: 11px; letter-spacing: 2px; }
+  .nav-btn { width:30px; height:30px; font-size:18px; }
+  .hname { font-size: 15px; }
+  .cdirect { font-size: 18px; }
+  .csnap, .cdrop { font-size: 13px; }
+  #th { font-size: 10px; padding: 5px 10px; }
+  .horse { padding: 10px 10px; }
+  #alerts { max-height: 104px; }
+  .aitem { padding: 3px 10px; font-size: 12px; }
 }
 
 /* ── DÉPART BAR ── */
 #depart-bar {
   background: linear-gradient(180deg, rgba(17,21,32,.98) 0%, rgba(13,17,28,.98) 100%);
   border-bottom: 1px solid rgba(61,142,240,.2);
-  padding: 10px 12px;
+  padding: 14px 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 14px;
   flex-shrink: 0;
   position: relative;
 }
@@ -209,7 +219,7 @@ body {
   background: linear-gradient(90deg, transparent, rgba(31,212,126,.25), transparent);
 }
 #cd-label {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text3);
   letter-spacing: 3px;
   text-transform: uppercase;
@@ -217,15 +227,15 @@ body {
 }
 #countdown {
   font-family: var(--font-mono);
-  font-size: 36px;
+  font-size: 48px;
   font-weight: 700;
   color: var(--green);
   line-height: 1;
-  letter-spacing: -1px;
-  text-shadow: 0 0 14px rgba(31,212,126,.35);
+  letter-spacing: -2px;
+  text-shadow: 0 0 20px rgba(31,212,126,.4);
 }
-#countdown.warn { color:var(--yellow); text-shadow:0 0 12px rgba(245,192,64,.3); }
-#countdown.crit { color:var(--red); animation:blink .45s infinite; text-shadow:0 0 12px rgba(240,68,85,.4); }
+#countdown.warn { color:var(--yellow); text-shadow:0 0 16px rgba(245,192,64,.35); }
+#countdown.crit { color:var(--red); animation:blink .45s infinite; text-shadow:0 0 16px rgba(240,68,85,.45); }
 #snap-badge {
   display: none;
   background: rgba(245,192,64,.1);
@@ -233,7 +243,7 @@ body {
   color: var(--yellow);
   font-size: 11px;
   font-family: var(--font-mono);
-  padding: 2px 6px;
+  padding: 3px 7px;
   border-radius: 3px;
   letter-spacing: 1px;
   animation: glow 2s infinite;
@@ -449,8 +459,10 @@ input[type=number]::-webkit-outer-spin-button { opacity:.3; }
     <div id="race-code">—</div>
     <div id="race-name">—</div>
     <div id="race-sub"></div>
-    <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+    <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
       <span id="race-counter" style="font-family:var(--font-mono);font-size:12px;color:var(--text3)"></span>
+      <span style="width:1px;height:10px;background:var(--border2);flex-shrink:0;display:inline-block"></span>
+      <span id="ts" style="font-family:var(--font-mono);font-size:11px;color:var(--text3)">—</span>
     </div>
   </div>
   <button class="nav-btn" id="btn-next" disabled title="Course suivante">›</button>
@@ -463,10 +475,6 @@ input[type=number]::-webkit-outer-spin-button { opacity:.3; }
   <span id="snap-badge">📸 SNAP</span>
 </div>
 
-<!-- FILTER BAR (épuré) -->
-<div id="filter-bar">
-  <span id="ts" style="margin-left:auto">—</span>
-</div>
 
 <!-- TABLE HEADER -->
 <div id="th">
@@ -619,9 +627,9 @@ async function loadProg() {
     S.programme=races.sort((a,b)=>a.depart-b.depart);
     S.lastProg=Date.now();
     setStatus(true);
-    if(races.length>0){ addAlert('info','📋',`Programme : ${races.length} courses`); return true; }
+    if(races.length>0){ return true; }
     return false;
-  } catch(e) { addAlert('info','⚠️',`Programme : ${e.message}`); setStatus(false); return false; }
+  } catch(e) { console.warn('[PROG]', e.message); setStatus(false); return false; }
 }
 
 // ── NAVIGATION ────────────────────────────────────────
@@ -688,9 +696,15 @@ async function pollSrvAlerts() {
       const key=a.ts+a.msg;
       if(S.srvAlertsSeen.has(key)) continue;
       S.srvAlertsSeen.add(key);
-      // N'affiche que drop + snap (pas les infos système)
-      if(a.type==='drop') { addAlert('drop','🔥',`[SRV] ${a.msg}`); alertBeep(); }
-      else if(a.type==='snap') { addAlert('snap','📸',`[SRV] ${a.msg}`); }
+    // N'affiche que drop (pas snap, pas infos système)
+      if(a.type==='drop') {
+        // Parse la cote finale depuis le message ex: "NOM chute 34→26 (−24%)"
+        const coteMatch = a.msg.match(/→(\d+(?:\.\d+)?)\s*\(/);
+        const coteFinal = coteMatch ? parseFloat(coteMatch[1]) : null;
+        // Ignorer si cote finale > tgMaxCote (même règle que Telegram)
+        if(coteFinal !== null && coteFinal > CFG.tgMaxCote) continue;
+        addAlert('drop','🔥',`[SRV] ${a.msg}`); alertBeep();
+      }
     }
     // Mise à jour indicateur serveur
     document.getElementById('srv-status').className='';
@@ -718,9 +732,11 @@ function checkDrops() {
     if(!snap) continue;
     const drop=(snap-cur)/snap*100;
     if(drop<minPct||S.alertedDrop.has(p.numPmu)) continue;
+    // Ignorer les chevaux avec cote finale > tgMaxCote (même règle que Telegram)
+    if(cur>CFG.tgMaxCote) continue;
     S.alertedDrop.add(p.numPmu);
-    addAlert('drop','🔥',`${p.nom} — ${snap}→${cur} (−${drop.toFixed(0)}%)`);
-    alertBeep();
+    // Pas d'addAlert ici — pollSrvAlerts gère l'affichage pour éviter le doublon
+    // On garde uniquement le flash visuel sur la ligne
     const row=document.getElementById(`row-${p.numPmu}`);
     if(row){row.classList.add('flash');setTimeout(()=>row.classList.remove('flash'),900);}
   }
@@ -796,6 +812,10 @@ function renderTable() {
 
 // ── ALERTES ───────────────────────────────────────────
 function addAlert(type,icon,msg) {
+  // Masquer les alertes de chargement de programme
+  if(type==='info' && (msg.startsWith('Programme :') || msg.includes('courses') || msg.startsWith('Aucun'))) return;
+  // Masquer les snapshots [SRV] — on garde seulement les drops et snapshots locaux
+  if(type==='snap' && msg.startsWith('[SRV]')) return;
   const list=document.getElementById('alerts-list');
   const item=document.createElement('div');
   item.className=`aitem ${type}`;
@@ -910,8 +930,8 @@ async function cotesLoop() {
       const latColor=ms<100?'#29c98a':ms<300?'#f5c842':'#f0445a';
       document.getElementById('ts').innerHTML=`↻ ${timeNow()} <span style="color:${latColor};font-weight:600">${ms}ms</span>`;
 
-      // Snapshot front (à 60s du départ)
-      if(secsLeft<=CFG.snapSecs&&secsLeft>0&&!S.snapDone) doSnapshot();
+      // Snapshot : uniquement via syncSnapFromServer (côté serveur, évite la duplication)
+      // doSnapshot() front supprimé — le serveur fait le snapshot et le front le récupère via /api/snapstate
 
       if(!unchanged) { checkDrops(); renderTable(); }
     } catch(e) {
