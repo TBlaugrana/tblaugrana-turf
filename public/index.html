@@ -1182,11 +1182,15 @@ async function cotesLoop() {
       document.getElementById('ts').innerHTML=`↻ ${timeNow()} <span style="color:${latColor};font-weight:600">${ms}ms</span>`;
 
       if(parts!==null) {
-        // Détecte les chutes AVANT d'écraser prevCotes
         S.participants=parts;
+
+        // 1. Rendu avec prevCotes = poll d'AVANT → Δ5s visible
+        renderTable();
+
+        // 2. Détection chutes (compare cotes actuelles vs prevCotes d'avant)
         if(nowInWindow) checkDrops();
 
-        // Écrase la référence
+        // 3. On écrase la référence APRÈS le rendu
         const newPrev={};
         for(const p of parts) {
           if(p.statut==='PARTANT'&&p.dernierRapportDirect?.rapport) {
@@ -1194,10 +1198,6 @@ async function cotesLoop() {
           }
         }
         S.prevCotes=newPrev;
-        renderTable();
-      } else {
-        // 304 — pas de changement, on re-render quand même pour le delta
-        renderTable();
       }
     } catch(e) {
       if(_fetchGeneration!==generation) return;
