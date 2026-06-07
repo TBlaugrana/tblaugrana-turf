@@ -671,11 +671,11 @@ const PMU_BASE_PARTS = '/api/pmu/parts';
 
 const CFG = {
   progRefreshSecs:  120,
-  windowSecs:       120,   // surveillance : 2 min avant le départ
+  windowSecs:       60,    // surveillance : 1 min avant le départ
   pollMs:           5000,  // poll fixe 5s
   fetchTimeoutMs:   4000,
   progCacheTtlMs:   90000,
-  maxAlerts:        12,
+  maxAlerts:        3,
   dropPct:          10,    // seuil chute glissant %
   tgMaxCote:        10,
 };
@@ -836,9 +836,8 @@ async function pollSrvAlerts() {
       if(S.srvAlertsSeen.has(key)) continue;
       S.srvAlertsSeen.add(key);
       if(a.type==='drop') {
-        const coteMatch = a.msg.match(/→([\d.]+)\s*\(/);
-        const coteFinal = coteMatch ? parseFloat(coteMatch[1]) : null;
-        if(coteFinal !== null && coteFinal > CFG.tgMaxCote) continue;
+        // FIX v6 : on affiche TOUTES les alertes serveur, sans filtre tgMaxCote
+        // (le serveur a déjà pris la décision d'alerter, on fait confiance)
         const time = a.ts ? a.ts.slice(11,19) : timeNow();
         addAlertFromSrvMsg(a.msg, time);
         alertBeep();
@@ -890,13 +889,16 @@ function renderTable() {
     return (a.dernierRapportDirect?.rapport??9999)-(b.dernierRapportDirect?.rapport??9999);
   });
 
-  // Filtre : affiche uniquement les chevaux cote ≤ tgMaxCote (ou ayant une alerte)
+  // Filtre : affiche les chevaux cote ≤ tgMaxCote, ou ayant une alerte, ou avec chute visible
   const visible=sorted.filter(p=>{
     if(p.statut==='NON_PARTANT') return false;
     const cur=p.dernierRapportDirect?.rapport;
     if(cur==null) return false;
     if(cur<=CFG.tgMaxCote) return true;
     if((S.alertCount[p.numPmu]||0)>0) return true;
+    // FIX v6 : montre aussi les chevaux avec chute significative même si cote > filtre
+    const prev=S.prevCotes[p.numPmu];
+    if(prev&&cur<prev&&(prev-cur)/prev*100>=CFG.dropPct) return true;
     return false;
   });
 
@@ -1070,13 +1072,12 @@ async function loadAlertHistory() {
     const r=await fetch('/api/alerts');
     if(!r.ok) return;
     const alerts=await r.json();
-    for(const a of [...alerts].reverse()) {
+    // FIX v6 : affiche tout l'historique serveur (persisté sur disque)
+    // sans filtre sur tgMaxCote — le serveur est la source de vérité
+    for(const a of [...alerts].reverse().slice(0, CFG.maxAlerts)) {
       const key=a.ts+a.msg;
       S.srvAlertsSeen.add(key);
       if(a.type!=='drop') continue;
-      const coteMatch=a.msg.match(/→([\d.]+)\s*\(/);
-      const coteFinal=coteMatch?parseFloat(coteMatch[1]):null;
-      if(coteFinal!==null&&coteFinal>CFG.tgMaxCote) continue;
       const time=a.ts?a.ts.slice(11,19):'—';
       addAlertFromSrvMsg(a.msg,time);
     }
@@ -1092,11 +1093,8 @@ function addAlertFromSrvMsg(msg,time) {
   const horseNum=numMatch?numMatch[1]:'';
   const afterNum=numMatch?rest.slice(numMatch[0].length):rest;
   const m=afterNum.match(/^(.+?)\s+chute\s+([\d.]+)→([\d.]+)\s*\(([-−][\d.]+)%\)/);
-  // FIX : incrémenter S.alertCount pour que la flamme apparaisse dans le tableau
-  if(horseNum) {
-    S.alertCount[horseNum]=(S.alertCount[horseNum]||0)+1;
-    renderTable();
-  }
+  // NE PAS toucher S.alertCount ici — les flammes dans le tableau ne doivent
+  // apparaître que pendant la surveillance live (checkDrops), pas depuis l'historique serveur.
   if(!m) { addAlert('drop','🔥',msg,{time}); return; }
   addAlert('drop','🔥',msg,{raceKey,num:horseNum,name:m[1],from:m[2],to:m[3],pct:m[4],time});
 }
@@ -1231,7 +1229,7 @@ async function tick() {
   cd.textContent=fmtCd(secsLeft);
   if(secsLeft<0)        { cd.style.color='var(--text2)'; cd.style.animation=''; cd.style.textShadow='none'; }
   else if(secsLeft<=30) { cd.style.color='var(--red)';    cd.style.animation='blink .45s infinite'; cd.style.textShadow='0 0 12px rgba(240,68,85,.4)'; }
-  else if(secsLeft<=120){ cd.style.color='var(--orange)'; cd.style.animation=''; cd.style.textShadow='0 0 12px rgba(240,120,64,.3)'; }
+  else if(secsLeft<=60) { cd.style.color='var(--orange)'; cd.style.animation=''; cd.style.textShadow='0 0 12px rgba(240,120,64,.3)'; }
   else                  { cd.style.color='var(--green)';  cd.style.animation=''; cd.style.textShadow='0 0 14px rgba(31,212,126,.35)'; }
 
   const pct=Math.max(0,Math.min(100,(1-Math.max(0,secsLeft)/3600)*100));
