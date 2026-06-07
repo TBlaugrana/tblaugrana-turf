@@ -294,6 +294,12 @@ async function watchRace(race) {
 
       if (drop < CFG.dropPct) continue;
 
+      // Ignore complètement si cote > tgMaxCote (pas de flamme, pas de Telegram)
+      if (curCote > CFG.tgMaxCote) {
+        log(`WATCH/${key}`, `#${numPmu} ${cur.nom} — ignoré (cote ${curCote} > filtre ${CFG.tgMaxCote})`);
+        continue;
+      }
+
       state.alertCount[numPmu] = (state.alertCount[numPmu] || 0) + 1;
       const alertN  = state.alertCount[numPmu];
       const secsStr = secsLeft > 0
@@ -303,17 +309,12 @@ async function watchRace(race) {
       const msg = `[${key}] #${numPmu} ${cur.nom} chute ${prevCote}→${curCote} (−${drop.toFixed(1)}%) — alerte #${alertN}`;
       pushAlert('drop', '🔥', msg);
 
-      // Telegram uniquement si cote <= tgMaxCote
-      if (curCote <= CFG.tgMaxCote) {
-        const tgTxt =
-          `🚨 *CHUTE ${key}* 🚨\n` +
-          `🐎 ${numPmu} — *${cur.nom}*\n` +
-          `${prevCote} ➡️ ${curCote} (−${drop.toFixed(1)}%)\n` +
-          `${secsStr}`;
-        sendTelegram(tgTxt).catch(e => log('TG ERR', e.message));
-      } else {
-        log(`WATCH/${key}`, `#${numPmu} ${cur.nom} — TG non envoyé (cote ${curCote} > filtre ${CFG.tgMaxCote})`);
-      }
+      const tgTxt =
+        `🚨 *CHUTE ${key}* 🚨\n` +
+        `🐎 ${numPmu} — *${cur.nom}*\n` +
+        `${prevCote} ➡️ ${curCote} (−${drop.toFixed(1)}%)\n` +
+        `${secsStr}`;
+      sendTelegram(tgTxt).catch(e => log('TG ERR', e.message));
     }
   }
 
