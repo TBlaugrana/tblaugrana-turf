@@ -28,7 +28,7 @@ const CFG = {
   tgChatIds:  (process.env.TG_CHATS   || '625118343,8288460384').split(',').map(s => s.trim()),
   tgMaxCote:  parseFloat(process.env.TG_MAX_COTE || '10'),
   dropPct:    parseFloat(process.env.DROP_PCT    || '10'),
-  windowSecs: 120,
+  windowSecs: 60,
   afterSecs:  180,
   pollMs:     5000,
   selfPingMs: 10 * 60 * 1000,
@@ -267,8 +267,8 @@ async function watchRace(race) {
 
   const hasPrev = Object.keys(state.prevCotes).length > 0;
 
-  // On rafraichit toujours les cotes, mais on n'alerte QUE dans les 2 dernieres minutes
-  const inAlertWindow = secsLeft <= 120;
+  // On rafraichit toujours les cotes, mais on n'alerte QUE dans la dernière minute
+  const inAlertWindow = secsLeft <= 60;
 
   if (!hasPrev) {
     log(`WATCH/${key}`, `1er poll — ${Object.keys(curCotes).length} partants, cotes initialisées (secsLeft=${secsLeft}s)`);
@@ -276,7 +276,7 @@ async function watchRace(race) {
     // Hors fenetre d'alerte : rafraichissement silencieux, aucune detection
     log(`WATCH/${key}`, `Hors fenetre alerte (${secsLeft}s avant depart) — cotes rafraichies sans detection`);
   } else {
-    // ── DÉTECTION CHUTES (uniquement dans les 2 dernieres minutes) ───
+    // ── DÉTECTION CHUTES (uniquement dans la dernière minute) ───
     for (const [numPmu, cur] of Object.entries(curCotes)) {
       const prev = state.prevCotes[numPmu];
       if (!prev) continue;
