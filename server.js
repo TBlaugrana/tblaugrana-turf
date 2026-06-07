@@ -267,13 +267,16 @@ async function watchRace(race) {
 
   const hasPrev = Object.keys(state.prevCotes).length > 0;
 
+  // On rafraichit toujours les cotes, mais on n'alerte QUE dans les 2 dernieres minutes
+  const inAlertWindow = secsLeft <= 120;
+
   if (!hasPrev) {
-    // ── FIX v6 : PREMIER POLL — on stocke les cotes immédiatement
-    // On NE saute plus ce poll. On initialise la référence ET on log.
     log(`WATCH/${key}`, `1er poll — ${Object.keys(curCotes).length} partants, cotes initialisées (secsLeft=${secsLeft}s)`);
-    // Pas de détection au 1er poll (pas de référence précédente) — normal
+  } else if (!inAlertWindow) {
+    // Hors fenetre d'alerte : rafraichissement silencieux, aucune detection
+    log(`WATCH/${key}`, `Hors fenetre alerte (${secsLeft}s avant depart) — cotes rafraichies sans detection`);
   } else {
-    // ── DÉTECTION CHUTES ────────────────────────────────────────
+    // ── DÉTECTION CHUTES (uniquement dans les 2 dernieres minutes) ───
     for (const [numPmu, cur] of Object.entries(curCotes)) {
       const prev = state.prevCotes[numPmu];
       if (!prev) continue;
@@ -300,16 +303,17 @@ async function watchRace(race) {
       const msg = `[${key}] #${numPmu} ${cur.nom} chute ${prevCote}→${curCote} (−${drop.toFixed(1)}%) — alerte #${alertN}`;
       pushAlert('drop', '🔥', msg);
 
-      // ── FIX v6 : Telegram envoyé dès que la chute >= dropPct
-      // Le filtre tgMaxCote était mal placé — il empêchait les alertes légitimes
-      // On envoie TOUJOURS si la chute est significative, et on indique la cote dans le message
-      const coteMark = curCote <= CFG.tgMaxCote ? '' : ` ⚠️ cote ${curCote} > filtre ${CFG.tgMaxCote}`;
-      const tgTxt =
-        `🚨 *CHUTE ${key}* 🚨\n` +
-        `🐎 ${numPmu} — *${cur.nom}*\n` +
-        `${prevCote} ➡️ ${curCote} (−${drop.toFixed(1)}%)${coteMark}\n` +
-        `${secsStr}`;
-      sendTelegram(tgTxt).catch(e => log('TG ERR', e.message));
+      // Telegram uniquement si cote <= tgMaxCote
+      if (curCote <= CFG.tgMaxCote) {
+        const tgTxt =
+          `🚨 *CHUTE ${key}* 🚨\n` +
+          `🐎 ${numPmu} — *${cur.nom}*\n` +
+          `${prevCote} ➡️ ${curCote} (−${drop.toFixed(1)}%)\n` +
+          `${secsStr}`;
+        sendTelegram(tgTxt).catch(e => log('TG ERR', e.message));
+      } else {
+        log(`WATCH/${key}`, `#${numPmu} ${cur.nom} — TG non envoyé (cote ${curCote} > filtre ${CFG.tgMaxCote})`);
+      }
     }
   }
 
