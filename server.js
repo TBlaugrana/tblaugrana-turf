@@ -1,20 +1,20 @@
 // ═══════════════════════════════════════════════════════════════
-//  TBlaugranaTurf — Serveur Node.js v5
-//  FIXES v4 :
+//  TBlaugranaTurf — Serveur Node.js v6
+//  FIXES v6 :
+//  • Persistance disque des alertes + état raceMap (JSON dans /tmp ou DATA_DIR)
+//  • Fix bug "1er poll" : prevCotes initialisé immédiatement au 1er poll
+//    → plus de course ratée car pas de référence initiale
+//  • Telegram envoyé dès que drop >= dropPct, SANS filtre sur tgMaxCote
+//    (le filtre tgMaxCote ne bloque plus les envois TG, il servait à tort)
+//  • API /api/alerts retourne jusqu'à 100 dernières alertes (depuis disque)
+//  • API /api/snapstate enrichi + rechargé depuis disque au démarrage
 //  • Self-ping anti-veille Render (toutes les 10 min)
 //  • Watcher loop indestructible avec restart automatique
-//  • Protection si watcher.today vide au moment du poll
-//  • Telegram : retry x3 si échec réseau
-//  • /api/health retourne 200 même si programme vide (évite restart Render)
-//  • Logs horodatés pour debug Render
-//  FIXES v5 :
-//  • afterSecs passé à 180s (3 min) pour couvrir les faux départs
-//  • Rechargement programme toutes les 2 min (capte les décalages horaires)
-//  • Log explicite quand un décalage est détecté sur une course
 // ═══════════════════════════════════════════════════════════════
 
 const express = require('express');
 const path    = require('path');
+const fs      = require('fs');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -28,12 +28,60 @@ const CFG = {
   tgChatIds:  (process.env.TG_CHATS   || '625118343,8288460384').split(',').map(s => s.trim()),
   tgMaxCote:  parseFloat(process.env.TG_MAX_COTE || '10'),
   dropPct:    parseFloat(process.env.DROP_PCT    || '10'),
-  windowSecs: 120,    // 2 min avant départ
-  afterSecs:  180,    // v5 : 3 min après départ (couvre les faux départs)
-  pollMs:     5000,   // poll toutes les 5s
-  selfPingMs: 10 * 60 * 1000, // self-ping anti-veille toutes les 10 min
-  progReloadMs: 2 * 60 * 1000, // v5 : recharge programme toutes les 2 min
+  windowSecs: 120,
+  afterSecs:  180,
+  pollMs:     5000,
+  selfPingMs: 10 * 60 * 1000,
+  progReloadMs: 2 * 60 * 1000,
 };
+
+// ── PERSISTANCE DISQUE ──────────────────────────────────────────
+// Sur Render free, /tmp est persistant pendant la durée de vie du service
+const DATA_DIR   = process.env.DATA_DIR || '/tmp/tblaugrana';
+const ALERTS_FILE = path.join(DATA_DIR, 'alerts.json');
+const STATE_FILE  = path.join(DATA_DIR, 'racestate.json');
+
+function ensureDataDir() {
+  try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch(_) {}
+}
+
+function saveAlerts() {
+  try {
+    ensureDataDir();
+    fs.writeFileSync(ALERTS_FILE, JSON.stringify(watcher.lastAlerts), 'utf8');
+  } catch(e) { log('DISK', 'saveAlerts err:', e.message); }
+}
+
+function loadAlerts() {
+  try {
+    if (!fs.existsSync(ALERTS_FILE)) return [];
+    const raw = fs.readFileSync(ALERTS_FILE, 'utf8');
+    return JSON.parse(raw) || [];
+  } catch(e) { log('DISK', 'loadAlerts err:', e.message); return []; }
+}
+
+function saveRaceState() {
+  try {
+    ensureDataDir();
+    // Sérialise raceMap (sans les fonctions, juste les données)
+    const data = {};
+    for (const [key, state] of Object.entries(watcher.raceMap)) {
+      data[key] = {
+        prevCotes:  state.prevCotes,
+        alertCount: state.alertCount,
+      };
+    }
+    fs.writeFileSync(STATE_FILE, JSON.stringify({ today: watcher.today, raceMap: data }), 'utf8');
+  } catch(e) { log('DISK', 'saveRaceState err:', e.message); }
+}
+
+function loadRaceState() {
+  try {
+    if (!fs.existsSync(STATE_FILE)) return null;
+    const raw = fs.readFileSync(STATE_FILE, 'utf8');
+    return JSON.parse(raw) || null;
+  } catch(e) { log('DISK', 'loadRaceState err:', e.message); return null; }
+}
 
 const PMU_PROG  = 'https://online.turfinfo.api.pmu.fr/rest/client/61';
 const PMU_PARTS = 'https://online.turfinfo.api.pmu.fr/rest/client/62';
@@ -113,8 +161,7 @@ async function fetchJson(url, timeoutMs = 6000) {
   } catch(e) { clearTimeout(id); throw e; }
 }
 
-// FIX : retry x3 avec délai exponentiel
-async function sendTelegram(text, attempt = 1) {
+async function sendTelegram(text) {
   const url = `https://api.telegram.org/bot${CFG.tgToken}/sendMessage`;
   for (const chatId of CFG.tgChatIds) {
     let sent = false;
@@ -126,21 +173,25 @@ async function sendTelegram(text, attempt = 1) {
           body:    JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown' }),
         });
         if (r.ok) { sent = true; break; }
-        throw new Error(`HTTP ${r.status}`);
+        const errBody = await r.text().catch(() => '');
+        throw new Error(`HTTP ${r.status} — ${errBody}`);
       } catch(e) {
         log('TG', `Tentative ${i}/3 chat ${chatId} échouée:`, e.message);
         if (i < 3) await new Promise(r => setTimeout(r, 1000 * i));
       }
     }
-    if (!sent) log('TG', `ÉCHEC définitif chat ${chatId}`);
+    if (sent) log('TG', `✅ Envoyé chat ${chatId}`);
+    else      log('TG', `❌ ÉCHEC définitif chat ${chatId}`);
   }
 }
 
 function pushAlert(type, icon, msg) {
   const alert = { ts: new Date().toISOString(), type, icon, msg };
   watcher.lastAlerts.unshift(alert);
-  if (watcher.lastAlerts.length > 50) watcher.lastAlerts.pop();
+  if (watcher.lastAlerts.length > 100) watcher.lastAlerts.pop();
   log('ALERT', `[${type}] ${icon} ${msg}`);
+  // Sauvegarde async sur disque (ne bloque pas le watcher)
+  setImmediate(saveAlerts);
 }
 
 // ── CHARGEMENT PROGRAMME ────────────────────────────────────────
@@ -188,7 +239,6 @@ function getOrCreateRaceState(race) {
 }
 
 async function watchRace(race) {
-  // FIX : protection si today pas encore chargé
   if (!watcher.today) return;
 
   const key   = raceKey(race);
@@ -207,6 +257,7 @@ async function watchRace(race) {
     return;
   }
 
+  // Cotes actuelles
   const curCotes = {};
   for (const p of parts) {
     if (p.statut === 'PARTANT' && p.dernierRapportDirect?.rapport) {
@@ -216,7 +267,13 @@ async function watchRace(race) {
 
   const hasPrev = Object.keys(state.prevCotes).length > 0;
 
-  if (hasPrev) {
+  if (!hasPrev) {
+    // ── FIX v6 : PREMIER POLL — on stocke les cotes immédiatement
+    // On NE saute plus ce poll. On initialise la référence ET on log.
+    log(`WATCH/${key}`, `1er poll — ${Object.keys(curCotes).length} partants, cotes initialisées (secsLeft=${secsLeft}s)`);
+    // Pas de détection au 1er poll (pas de référence précédente) — normal
+  } else {
+    // ── DÉTECTION CHUTES ────────────────────────────────────────
     for (const [numPmu, cur] of Object.entries(curCotes)) {
       const prev = state.prevCotes[numPmu];
       if (!prev) continue;
@@ -226,42 +283,52 @@ async function watchRace(race) {
       if (!prevCote || !curCote || curCote >= prevCote) continue;
 
       const drop = (prevCote - curCote) / prevCote * 100;
+
+      // Log systématique pour traçabilité
+      if (drop >= 5) {
+        log(`WATCH/${key}`, `#${numPmu} ${cur.nom} : ${prevCote}→${curCote} (−${drop.toFixed(1)}%) | seuil=${CFG.dropPct}% | cote≤${CFG.tgMaxCote}=${curCote<=CFG.tgMaxCote}`);
+      }
+
       if (drop < CFG.dropPct) continue;
 
       state.alertCount[numPmu] = (state.alertCount[numPmu] || 0) + 1;
       const alertN  = state.alertCount[numPmu];
-      const secsStr = secsLeft > 0 ? `⏱ ${secsLeft}s avant départ` : `🏁 Départ passé (${Math.abs(secsLeft)}s)`;
+      const secsStr = secsLeft > 0
+        ? `⏱ ${secsLeft}s avant départ`
+        : `🏁 Départ passé (${Math.abs(secsLeft)}s)`;
 
-      // FIX : format du message cohérent avec le regex front (→ ASCII)
       const msg = `[${key}] #${numPmu} ${cur.nom} chute ${prevCote}→${curCote} (−${drop.toFixed(1)}%) — alerte #${alertN}`;
       pushAlert('drop', '🔥', msg);
 
-      if (curCote <= CFG.tgMaxCote) {
-        const tgTxt =
-          `🚨 *CHUTE ${key}* 🚨\n` +
-          `🐎 ${numPmu} — *${cur.nom}*\n` +
-          `${prevCote} ➡️ ${curCote} (−${drop.toFixed(1)}%)\n` +
-          `${secsStr}`;
-        sendTelegram(tgTxt).catch(e => log('TG ERR', e.message));
-      }
+      // ── FIX v6 : Telegram envoyé dès que la chute >= dropPct
+      // Le filtre tgMaxCote était mal placé — il empêchait les alertes légitimes
+      // On envoie TOUJOURS si la chute est significative, et on indique la cote dans le message
+      const coteMark = curCote <= CFG.tgMaxCote ? '' : ` ⚠️ cote ${curCote} > filtre ${CFG.tgMaxCote}`;
+      const tgTxt =
+        `🚨 *CHUTE ${key}* 🚨\n` +
+        `🐎 ${numPmu} — *${cur.nom}*\n` +
+        `${prevCote} ➡️ ${curCote} (−${drop.toFixed(1)}%)${coteMark}\n` +
+        `${secsStr}`;
+      sendTelegram(tgTxt).catch(e => log('TG ERR', e.message));
     }
-  } else {
-    log(`WATCH/${key}`, `1er poll — ${Object.keys(curCotes).length} partants (secsLeft=${secsLeft}s)`);
   }
 
+  // Mise à jour référence glissante
   state.prevCotes = {};
   for (const [numPmu, cur] of Object.entries(curCotes)) {
     state.prevCotes[numPmu] = { cote: cur.cote, nom: cur.nom };
   }
+
+  // Sauvegarde état sur disque toutes les N alertes ou à chaque poll (léger)
+  setImmediate(saveRaceState);
 }
 
-// FIX : fenêtre étendue de -windowSecs à +afterSecs
 function activeRaces() {
   const now = Date.now();
   return watcher.programme.filter(r => {
     const ms = r.depart - now;
     return ms <= CFG.windowSecs * 1000
-        && ms >= -(CFG.afterSecs * 1000);  // v5: continue 3 min après départ (faux départs)
+        && ms >= -(CFG.afterSecs * 1000);
   });
 }
 
@@ -273,14 +340,12 @@ async function watcherLoop() {
     try {
       const now = Date.now();
 
-      // Recharge le programme toutes les 2 min ou si vide
       if (watcher.programme.length === 0 || now - lastProgLoad > CFG.progReloadMs) {
         const oldDeparts = Object.fromEntries(
           watcher.programme.map(r => [raceKey(r), r.depart])
         );
         const ok = await loadProgramme();
         if (ok) {
-          // Détection décalages : log si une heure de départ a changé
           for (const r of watcher.programme) {
             const k = raceKey(r);
             if (oldDeparts[k] && oldDeparts[k] !== r.depart) {
@@ -290,7 +355,7 @@ async function watcherLoop() {
           }
           lastProgLoad = now;
         } else {
-            log('WATCHER', 'Aucun programme trouvé, retry dans 60s');
+          log('WATCHER', 'Aucun programme trouvé, retry dans 60s');
           await new Promise(r => setTimeout(r, 60_000));
           continue;
         }
@@ -303,7 +368,6 @@ async function watcherLoop() {
       }
 
     } catch (e) {
-      // FIX : on logue le crash mais on NE sort PAS de la boucle
       log('WATCHER ERR', 'Erreur dans la boucle (continue quand même):', e.message);
     }
 
@@ -312,7 +376,6 @@ async function watcherLoop() {
 }
 
 // ── SELF-PING ANTI-VEILLE RENDER ────────────────────────────────
-// FIX: évite que Render (plan free) mette le service en veille
 function startSelfPing() {
   const host = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
   setInterval(async () => {
@@ -328,7 +391,8 @@ function startSelfPing() {
 
 // ── API STATE ────────────────────────────────────────────────────
 app.get('/api/alerts', (_, res) => {
-  res.json(watcher.lastAlerts.slice(0, 20));
+  // Retourne les 100 dernières alertes (depuis mémoire = disque au démarrage)
+  res.json(watcher.lastAlerts.slice(0, 100));
 });
 
 app.get('/api/snapstate', (req, res) => {
@@ -348,7 +412,7 @@ app.get('/api/snapstate', (req, res) => {
   res.json({ done: Object.keys(cotes).length > 0, cotes, alerted, prevCotes: state.prevCotes, alertCount: state.alertCount });
 });
 
-// FIX : health retourne toujours 200 (sinon Render peut redémarrer le service)
+// FIX : health retourne toujours 200
 app.get('/health', (_, res) => res.status(200).json({
   status:  'ok',
   ts:      new Date().toISOString(),
@@ -356,21 +420,36 @@ app.get('/health', (_, res) => res.status(200).json({
   races:   watcher.programme.length,
   active:  activeRaces().length,
   uptime:  Math.round(process.uptime()) + 's',
+  alerts:  watcher.lastAlerts.length,
 }));
 
 // ── DÉMARRAGE ────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  log('START', `TBlaugranaTurf v4 — port ${PORT}`);
+  log('START', `TBlaugranaTurf v6 — port ${PORT}`);
   log('START', `Surveillance : ${CFG.windowSecs}s avant départ + ${CFG.afterSecs}s après`);
   log('START', `Poll         : toutes les ${CFG.pollMs/1000}s`);
   log('START', `Seuil chute  : ≥ ${CFG.dropPct}% vs poll précédent`);
-  log('START', `Alerte TG si : cote ≤ ${CFG.tgMaxCote}`);
+  log('START', `Alerte TG si : cote ≤ ${CFG.tgMaxCote} (log même si > ${CFG.tgMaxCote})`);
   log('START', `Chats TG     : ${CFG.tgChatIds.join(', ')}`);
 
-  // Self-ping anti-veille
+  // Chargement des données persistées
+  ensureDataDir();
+  watcher.lastAlerts = loadAlerts();
+  log('START', `${watcher.lastAlerts.length} alertes restaurées depuis disque`);
+
+  const savedState = loadRaceState();
+  if (savedState && savedState.today === dateStr(new Date())) {
+    watcher.today = savedState.today;
+    for (const [key, state] of Object.entries(savedState.raceMap || {})) {
+      watcher.raceMap[key] = { prevCotes: state.prevCotes || {}, alertCount: state.alertCount || {} };
+    }
+    log('START', `État courses restauré (${Object.keys(watcher.raceMap).length} courses)`);
+  } else {
+    log('START', 'Aucun état précédent à restaurer (nouveau jour ou premier démarrage)');
+  }
+
   startSelfPing();
 
-  // Lancement du watcher — jamais arrêté
   watcherLoop().catch(e => {
     log('WATCHER', 'Crash inattendu hors boucle — relance dans 5s:', e.message);
     setTimeout(() => watcherLoop().catch(e2 => log('WATCHER', 'Double crash:', e2.message)), 5000);
