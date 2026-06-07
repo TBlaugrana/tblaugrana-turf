@@ -15,3 +15,8 @@ services:
         value: "10"
       - key: DROP_PCT
         value: "10"
+      - key: RENDER_EXTERNAL_URL
+        fromService:
+          type: web
+          name: tblaugrana-turf
+          property: hostport
