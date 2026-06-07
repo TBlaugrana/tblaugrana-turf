@@ -1,22 +1,1297 @@
-services:
-  - type: web
-    name: tblaugrana-turf
-    env: node
-    plan: free
-    buildCommand: npm install
-    startCommand: node server.js
-    healthCheckPath: /health
-    envVars:
-      - key: TG_TOKEN
-        value: 8961502220:AAGlpLomYVMXRQgrJsPp5M4m-omFPJPBKoU
-      - key: TG_CHATS
-        value: "625118343,8288460384"
-      - key: TG_MAX_COTE
-        value: "10"
-      - key: DROP_PCT
-        value: "10"
-      - key: RENDER_EXTERNAL_URL
-        fromService:
-          type: web
-          name: tblaugrana-turf
-          property: hostport
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TBlaugranaTurf">
+<meta name="theme-color" content="#0b0f1a">
+<title>TBlaugranaTurf</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230b0f1a'/%3E%3Ctext y='50' x='5' font-size='50'%3E🐎%3C/text%3E%3C/svg%3E">
+<style>
+:root {
+  --bg:        #0a0d18;
+  --surface:   #0f1322;
+  --surface2:  #141929;
+  --surface3:  #0c1020;
+  --border:    #1c2238;
+  --border2:   #243050;
+  --accent:    #3d8ef0;
+  --accent2:   #5ba3ff;
+  --green:     #1fd47e;
+  --red:       #f04455;
+  --yellow:    #f5c040;
+  --orange:    #f07840;
+  --text:      #cdd8f0;
+  --text2:     #6880b0;
+  --text3:     #37456a;
+  --r:         8px;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-ui:   'Rajdhani', sans-serif;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html, body {
+  height: 100%;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+::-webkit-scrollbar { width: 2px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ── HEADER ── */
+#header {
+  background: linear-gradient(180deg, #141c34 0%, #0f1322 100%);
+  border-bottom: 1px solid rgba(61,142,240,.2);
+  padding: 9px 12px 8px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  position: relative;
+  gap: 8px;
+  min-height: 46px;
+}
+#header::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(91,163,255,.4) 50%, transparent 100%);
+}
+.logo-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.logo-horse { font-size: 18px; line-height: 1; }
+.logo {
+  font-family: var(--font-ui);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  background: linear-gradient(135deg, #5ba3ff 0%, #3d8ef0 45%, #1fd47e 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+#status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: pulse 2.5s infinite;
+  flex-shrink: 0;
+}
+#status-dot.err { background:var(--red); box-shadow:0 0 6px var(--red); animation:none; }
+
+/* ── SERVER STATUS pill ── */
+#srv-status {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+  background: rgba(31,212,126,.1);
+  border: 1px solid rgba(31,212,126,.25);
+  color: var(--green);
+  transition: all .3s;
+}
+#srv-status.off { background:rgba(240,68,85,.08); border-color:rgba(240,68,85,.25); color:var(--red); }
+
+/* ── PROGRESS BAR ── */
+#prog-bar { height: 2px; background: rgba(255,255,255,.03); flex-shrink:0; }
+#prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--green));
+  transition: width .8s linear;
+  width: 0%;
+  box-shadow: 0 0 4px rgba(61,142,240,.5);
+}
+
+/* ── RACE BAR ── */
+#race-bar {
+  background: var(--surface3);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+.nav-btn {
+  background: rgba(61,142,240,.08);
+  border: 1px solid rgba(61,142,240,.18);
+  color: var(--text2);
+  font-size: 20px;
+  width: 36px; height: 36px;
+  border-radius: var(--r);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .15s;
+  flex-shrink: 0;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+.nav-btn:active { background:var(--accent); border-color:var(--accent); color:#fff; }
+.nav-btn:disabled { opacity:.15; cursor:not-allowed; pointer-events:none; }
+
+#race-info { flex:1; min-width:0; }
+#race-code {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--accent2);
+  letter-spacing: 2px;
+  margin-bottom: 1px;
+  text-transform: uppercase;
+}
+#race-name {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: .2px;
+  line-height: 1.25;
+  color: var(--text);
+}
+#race-sub {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 1px;
+  letter-spacing: .3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+#race-counter {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  margin-top: 1px;
+}
+
+/* ── DÉPART BAR ── */
+#depart-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 7px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+#cd-label {
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+#countdown {
+  font-family: var(--font-mono);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--green);
+  line-height: 1;
+  letter-spacing: -1px;
+  text-shadow: 0 0 14px rgba(31,212,126,.35);
+}
+
+/* ── SURVEILLANCE BADGE (remplace snap-badge) ── */
+#watch-badge {
+  display: none;
+  font-size: 9px;
+  font-family: var(--font-mono);
+  padding: 3px 7px;
+  border-radius: 4px;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+}
+#watch-badge.active {
+  display: inline-block;
+  background: rgba(240,120,64,.12);
+  border: 1px solid rgba(240,120,64,.4);
+  color: var(--orange);
+  animation: glow-orange 1.5s infinite;
+}
+#watch-badge.done {
+  display: inline-block;
+  background: rgba(55,69,106,.2);
+  border: 1px solid rgba(55,69,106,.4);
+  color: var(--text3);
+}
+
+#ts {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+/* ── TABLE HEADER — 5 colonnes : # NOM LIVE PREV Δ5s ── */
+#th {
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border2);
+  padding: 5px 10px;
+  display: grid;
+  grid-template-columns: 24px 1fr 52px 44px 62px;
+  gap: 2px;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--text3);
+  text-transform: uppercase;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+
+/* ── PARTICIPANTS ── */
+#participants {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+.horse {
+  display: grid;
+  grid-template-columns: 24px 1fr 52px 44px 62px;
+  gap: 2px;
+  align-items: center;
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(28,34,56,.9);
+  transition: background .12s;
+  position: relative;
+}
+.horse::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0; width: 0;
+  background: var(--accent);
+  transition: width .15s;
+}
+.horse:active { background: rgba(61,142,240,.05); }
+.horse.np { opacity:.2; text-decoration:line-through; }
+.horse.fav .hname { color:var(--yellow); }
+
+/* État alerte glissante — pulsation orange */
+.horse.dropping {
+  background: rgba(240,120,64,.06);
+}
+.horse.dropping::before { width:3px; background:var(--orange); }
+.horse.dropping-strong {
+  background: rgba(240,68,85,.08);
+  animation: rowPulse 1s ease forwards;
+}
+.horse.dropping-strong::before { width:3px; background:var(--red); }
+
+.hnum {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text3);
+  text-align: center;
+  font-weight: 700;
+  background: rgba(255,255,255,.04);
+  border-radius: 3px;
+  padding: 2px 0;
+  line-height: 1.4;
+}
+.hname {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: .1px;
+  line-height: 1.3;
+}
+/* Colonne LIVE */
+.clive {
+  font-family: var(--font-mono);
+  font-size: 19px;
+  font-weight: 700;
+  text-align: right;
+  letter-spacing: -0.5px;
+  color: var(--text);
+  transition: color .3s;
+}
+/* Colonne PREV */
+.cprev {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  text-align: right;
+  color: var(--text3);
+}
+/* Colonne Δ5s */
+.cdelta {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  text-align: right;
+  font-weight: 700;
+  color: var(--text3);
+  transition: color .3s;
+}
+.cdelta.hot    { color: var(--red);    text-shadow: 0 0 6px rgba(240,68,85,.4); }
+.cdelta.warm   { color: var(--orange); }
+.cdelta.slight { color: var(--yellow); }
+.cdelta.up     { color: var(--text3); font-weight:400; }
+.cdelta.flat   { color: var(--text3); font-weight:400; }
+
+/* nb alertes badge sur le nom */
+.alert-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--red);
+  background: rgba(240,68,85,.15);
+  border: 1px solid rgba(240,68,85,.3);
+  border-radius: 3px;
+  padding: 0 3px;
+  margin-left: 4px;
+  vertical-align: middle;
+  line-height: 1.6;
+}
+
+/* ── ALERTS ── */
+#alerts {
+  background: var(--surface3);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow-y: auto;
+  max-height: 185px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+#alerts-hd {
+  padding: 6px 12px;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text2);
+  text-transform: uppercase;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(12,16,32,.97);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  min-height: 32px;
+}
+.abadge {
+  background: var(--red);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 8px;
+  min-width: 16px;
+  text-align: center;
+  display: none;
+  font-family: var(--font-mono);
+}
+#clr-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 10px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  letter-spacing: 1px;
+  transition: color .15s;
+  text-transform: uppercase;
+  padding: 4px 0;
+}
+#clr-btn:active { color:var(--text2); }
+
+/* ── ALERT CARDS — compact single-line layout ── */
+.aitem {
+  margin: 4px 8px;
+  border-radius: 6px;
+  animation: slideIn .2s ease;
+  overflow: hidden;
+}
+.aitem.drop {
+  background: linear-gradient(135deg, rgba(26,13,13,.95) 0%, rgba(18,9,9,.95) 100%);
+  border: 1px solid rgba(240,68,85,.25);
+  box-shadow: 0 2px 8px rgba(0,0,0,.3), inset 0 1px 0 rgba(240,68,85,.07);
+}
+.aitem.info {
+  background: rgba(20,25,41,.7);
+  border: 1px solid rgba(36,48,80,.6);
+}
+/* Single-line compact card */
+.acard-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+.acard-key {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--red);
+  letter-spacing: 1.5px;
+  flex-shrink: 0;
+}
+.acard-time {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+.acard-horse-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  background: rgba(255,255,255,.06);
+  padding: 1px 4px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.acard-hname {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+.acard-cotes {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+.acard-cote-from {
+  font-size: 13px;
+  color: var(--text2);
+  text-decoration: line-through;
+  text-decoration-color: rgba(240,68,85,.4);
+}
+.acard-arrow { font-size: 11px; color: var(--red); }
+.acard-cote-to {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--red);
+  text-shadow: 0 0 6px rgba(240,68,85,.4);
+}
+.acard-drop-pct {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--red);
+  background: rgba(240,68,85,.1);
+  border: 1px solid rgba(240,68,85,.2);
+  padding: 1px 5px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+/* badge compteur d'alertes sur une carte */
+.acard-count {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--orange);
+  background: rgba(240,120,64,.1);
+  border: 1px solid rgba(240,120,64,.25);
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* Carte arrivée */
+.aitem.arrival {
+  background: linear-gradient(135deg, rgba(18,20,38,.95) 0%, rgba(12,14,28,.95) 100%);
+  border: 1px solid rgba(91,163,255,.18);
+  box-shadow: 0 2px 10px rgba(0,0,0,.35);
+}
+.acard-arrival-title {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--accent2);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.acard-arrival-horses { display:flex; gap:6px; flex-wrap:wrap; }
+.acard-arrival-pos {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(61,142,240,.07);
+  border: 1px solid rgba(61,142,240,.14);
+  border-radius: 5px;
+  padding: 3px 7px;
+  min-width: 40px;
+}
+.acard-arrival-rank { font-family:var(--font-mono); font-size:8px; color:var(--text3); letter-spacing:1px; }
+.acard-arrival-num  { font-family:var(--font-mono); font-size:16px; font-weight:700; color:var(--accent2); line-height:1.2; }
+.acard-arrival-name { font-size:8px; color:var(--text3); text-align:center; max-width:55px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* ── LOADING ── */
+#loading {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  gap: 14px;
+  background-image: radial-gradient(ellipse at 50% 40%, rgba(61,142,240,.08) 0%, transparent 60%);
+}
+.spinner { width:30px; height:30px; border:2px solid var(--border2); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; }
+.ltxt { font-family:var(--font-ui); font-size:22px; font-weight:700; letter-spacing:4px; background:linear-gradient(135deg,#5ba3ff,#1fd47e); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.lsub { font-family:var(--font-mono); font-size:10px; color:var(--text3); letter-spacing:2px; text-transform:uppercase; }
+
+/* ── ANIMATIONS ── */
+@keyframes pulse      { 0%,100%{ opacity:1; transform:scale(1) } 50%{ opacity:.3; transform:scale(.8) } }
+@keyframes blink      { 0%,100%{ opacity:1 } 50%{ opacity:.1 } }
+@keyframes spin       { to{ transform:rotate(360deg) } }
+@keyframes slideIn    { from{ transform:translateY(-4px);opacity:0 } to{ transform:translateY(0);opacity:1 } }
+@keyframes rowPulse   { 0%{ background:rgba(240,68,85,.25) } 100%{ background:rgba(240,68,85,.08) } }
+@keyframes glow-orange{ 0%,100%{ box-shadow:0 0 4px rgba(240,120,64,.2) } 50%{ box-shadow:0 0 10px rgba(240,120,64,.6) } }
+@keyframes flash-live { 0%{ color:#fff } 100%{ color:inherit } }
+.flash-cell { animation: flash-live .4s ease forwards; }
+</style>
+</head>
+<body>
+
+<!-- LOADING SCREEN -->
+<div id="loading">
+  <div class="spinner"></div>
+  <span class="ltxt">TBlaugranaTurf</span>
+  <span id="load-sub" class="lsub">CHARGEMENT DU PROGRAMME...</span>
+</div>
+
+<!-- HEADER -->
+<div id="header">
+  <div class="logo-wrap">
+    <span class="logo-horse">🐎</span>
+    <span class="logo">TBlaugranaTurf</span>
+    <span class="logo-horse" style="transform:scaleX(-1);display:inline-block">🐎</span>
+  </div>
+  <span id="srv-status">SRV ●</span>
+  <div id="status-dot"></div>
+</div>
+
+<!-- PROGRESS BAR -->
+<div id="prog-bar"><div id="prog-fill"></div></div>
+
+<!-- RACE BAR -->
+<div id="race-bar">
+  <button class="nav-btn" id="btn-prev" disabled title="Course précédente">‹</button>
+  <div id="race-info">
+    <div id="race-code">—</div>
+    <div id="race-name">—</div>
+    <div id="race-sub"></div>
+    <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+      <span id="race-counter"></span>
+      <span style="width:1px;height:8px;background:var(--border2);flex-shrink:0;display:inline-block"></span>
+      <span id="ts">—</span>
+    </div>
+  </div>
+  <button class="nav-btn" id="btn-next" disabled title="Course suivante">›</button>
+</div>
+
+<!-- DÉPART BAR -->
+<div id="depart-bar">
+  <span id="cd-label">DÉPART</span>
+  <span id="countdown">--:--</span>
+  <span id="watch-badge">👁 LIVE</span>
+</div>
+
+<!-- TABLE HEADER : # | CHEVAL | LIVE | PREV | Δ5s -->
+<div id="th">
+  <span>#</span>
+  <span>CHEVAL</span>
+  <span style="text-align:right">LIVE</span>
+  <span style="text-align:right">PREV</span>
+  <span style="text-align:right">Δ5s</span>
+</div>
+
+<!-- PARTICIPANTS LIST -->
+<div id="participants"></div>
+
+<!-- ALERTS PANEL -->
+<div id="alerts">
+  <div id="alerts-hd">
+    <span>📡 ALERTES</span>
+    <span id="abadge" class="abadge">0</span>
+    <button id="clr-btn" onclick="clearAlerts()">EFFACER</button>
+  </div>
+  <div id="alerts-list"></div>
+</div>
+
+<script>
+'use strict';
+// ═══════════════════════════════════════════════════════
+//  TBlaugranaTurf — Front v3
+//  Logique GLISSANTE : référence = cote du poll précédent
+//  Alerte si chute ≥ 10% en 5s (fenêtre 2 min avant départ)
+//  Les alertes critiques tournent côté SERVEUR (H24).
+// ═══════════════════════════════════════════════════════
+
+const PMU_BASE_PROG  = '/api/pmu/prog';
+const PMU_BASE_PARTS = '/api/pmu/parts';
+
+const CFG = {
+  progRefreshSecs:  120,
+  windowSecs:       120,   // surveillance : 2 min avant le départ
+  pollMs:           5000,  // poll fixe 5s
+  fetchTimeoutMs:   4000,
+  progCacheTtlMs:   90000,
+  maxAlerts:        12,
+  dropPct:          10,    // seuil chute glissant %
+  tgMaxCote:        10,
+};
+
+let S = {
+  today:          '',
+  programme:      [],
+  curIdx:         -1,
+  manualIdx:      -1,
+  participants:   [],
+  // Référence glissante : cotes du dernier poll
+  prevCotes:      {},   // { numPmu: cote }
+  alertCount:     {},   // { numPmu: n } — nb chutes détectées par cheval
+  inWindow:       false,
+  alertTotal:     0,
+  tick:           0,
+  lastFetchMs:    0,
+  srvAlertsSeen:  new Set(),
+};
+
+const _progCache = {};
+let _fetchGeneration = 0;
+let _latencyHistory  = [];
+const _etags = {};
+
+const pad = n => String(n).padStart(2, '0');
+function dateStr(d) { return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`; }
+function timeNow()  { const n=new Date(); return `${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`; }
+function fmtCd(s) {
+  if (s < 0) return 'PARTI';
+  const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
+  return h>0 ? `${h}h${pad(m)}` : `${pad(m)}:${pad(sec)}`;
+}
+function datePmu(s) { return s.slice(6,8)+s.slice(4,6)+s.slice(0,4); }
+
+function addLatency(ms) { _latencyHistory.push(ms); if(_latencyHistory.length>10)_latencyHistory.shift(); }
+function avgLatency() { return _latencyHistory.length ? Math.round(_latencyHistory.reduce((a,b)=>a+b,0)/_latencyHistory.length) : 0; }
+
+// ── AUDIO ──────────────────────────────────────────────
+let _ac=null;
+function getAC() { if(!_ac) _ac=new(window.AudioContext||window.webkitAudioContext)(); if(_ac.state==='suspended')_ac.resume(); return _ac; }
+document.addEventListener('click', ()=>{ try{getAC();}catch(_){} }, {once:true});
+function beep(freq=880,dur=150,type='sine') {
+  try {
+    const ctx=getAC(),osc=ctx.createOscillator(),gain=ctx.createGain();
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.type=type;osc.frequency.value=freq;
+    gain.gain.setValueAtTime(.22,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+dur/1000);
+    osc.start();osc.stop(ctx.currentTime+dur/1000);
+  } catch(_){}
+}
+function alertBeep() { beep(1100,80); setTimeout(()=>beep(880,100),130); setTimeout(()=>beep(1300,220),290); }
+function enterWindowBeep() {
+  try {
+    const ctx=getAC(),t=ctx.currentTime;
+    [[440,0],[550,.15],[660,.3]].forEach(([f,d])=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);
+      o.type='triangle';o.frequency.value=f;
+      g.gain.setValueAtTime(.15,t+d);g.gain.exponentialRampToValueAtTime(.001,t+d+.25);
+      o.start(t+d);o.stop(t+d+.28);
+    });
+  } catch(_){}
+}
+
+// ── FETCH ──────────────────────────────────────────────
+async function fetchWithTimeout(url,opts={},ms=CFG.fetchTimeoutMs) {
+  const ctrl=new AbortController(),id=setTimeout(()=>ctrl.abort(),ms);
+  try { const r=await fetch(url,{...opts,signal:ctrl.signal}); clearTimeout(id); return r; }
+  catch(e) { clearTimeout(id); throw e; }
+}
+
+// ── PROGRAMME ─────────────────────────────────────────
+async function loadProg() {
+  S.today=dateStr(new Date());
+  setLoadSub('CHARGEMENT DU PROGRAMME...');
+  try {
+    const cached=_progCache[S.today];
+    let data;
+    if(cached&&(Date.now()-cached.ts)<CFG.progCacheTtlMs) { data=cached.data; }
+    else {
+      const r=await fetchWithTimeout(`${PMU_BASE_PROG}/programme/${datePmu(S.today)}?specialisation=OFFLINE`,{cache:'no-store'});
+      if(!r.ok) throw new Error(`HTTP ${r.status}`);
+      data=await r.json();
+      _progCache[S.today]={ts:Date.now(),data};
+    }
+    const races=[];
+    for(const ru of(data?.programme?.reunions||[])) {
+      const hip=ru.hippodrome?.libelleCourt||ru.hippodrome?.libelleLong||`R${ru.numOfficiel}`;
+      for(const co of(ru.courses||[])) {
+        races.push({reunion:ru.numOfficiel,course:co.numOrdre,depart:co.heureDepart,
+          libelle:co.libelle||co.libelleCourt||`Course ${co.numOrdre}`,hip,disc:co.discipline||co.specialite||''});
+      }
+    }
+    S.programme=races.sort((a,b)=>a.depart-b.depart);
+    S.lastProg=Date.now();
+    setStatus(true);
+    return races.length>0;
+  } catch(e) { console.warn('[PROG]', e.message); setStatus(false); return false; }
+}
+
+// ── NAVIGATION ────────────────────────────────────────
+function findNext() {
+  const now=Date.now();
+  for(let i=0;i<S.programme.length;i++) if(S.programme[i].depart>=now-300_000) return i;
+  return Math.max(0,S.programme.length-1);
+}
+function effectiveIdx() { return S.manualIdx>=0?S.manualIdx:findNext(); }
+function isAuto()       { return S.manualIdx<0; }
+
+function onRaceChange() {
+  // Reset état glissant
+  S.prevCotes={};
+  S.alertCount={};
+  S.inWindow=false;
+  S.participants=[];
+  document.getElementById('watch-badge').className='';
+  document.getElementById('watch-badge').style.display='none';
+  document.getElementById('participants').innerHTML='';
+  document.getElementById('prog-fill').style.width='0%';
+  cotesLoop();
+}
+
+// ── SYNC ÉTAT DEPUIS SERVEUR ───────────────────────────
+// Récupère les cotes serveur si l'onglet était fermé pendant la fenêtre
+async function syncFromServer(race) {
+  const key=`R${race.reunion}C${race.course}`;
+  try {
+    const r=await fetch(`/api/snapstate?key=${key}`);
+    if(!r.ok) return;
+    const d=await r.json();
+    if(d.done && Object.keys(d.cotes||{}).length>0) {
+      // Initialise prevCotes depuis les cotes serveur
+      for(const [num,cote] of Object.entries(d.cotes)) {
+        S.prevCotes[num]=cote;
+      }
+      // Restaure les compteurs d'alertes
+      if(d.alertCount) {
+        for(const [num,n] of Object.entries(d.alertCount)) {
+          if(n>0) S.alertCount[num]=n;
+        }
+      }
+      addAlert('info','🔄',`État restauré depuis serveur (${Object.keys(d.cotes).length} chevaux)`);
+      renderTable();
+    }
+  } catch(_){}
+}
+
+// ── POLL ALERTES SERVEUR ──────────────────────────────
+async function pollSrvAlerts() {
+  try {
+    const r=await fetch('/api/alerts');
+    if(!r.ok) return;
+    const alerts=await r.json();
+    for(const a of alerts) {
+      const key=a.ts+a.msg;
+      if(S.srvAlertsSeen.has(key)) continue;
+      S.srvAlertsSeen.add(key);
+      if(a.type==='drop') {
+        // FIX v6 : on affiche TOUTES les alertes serveur, sans filtre tgMaxCote
+        // (le serveur a déjà pris la décision d'alerter, on fait confiance)
+        const time = a.ts ? a.ts.slice(11,19) : timeNow();
+        addAlertFromSrvMsg(a.msg, time);
+        alertBeep();
+      }
+    }
+    document.getElementById('srv-status').className='';
+    document.getElementById('srv-status').textContent='SRV ●';
+  } catch(_) {
+    document.getElementById('srv-status').className='off';
+    document.getElementById('srv-status').textContent='SRV ✕';
+  }
+}
+
+// ── DÉTECTION CHUTES GLISSANTES (front, pour UI) ──────
+// Appelée après chaque poll, compare curCotes vs prevCotes
+function checkDrops(curCotes) {
+  if(!S.inWindow) return;
+  if(Object.keys(S.prevCotes).length===0) return;
+
+  for(const p of S.participants) {
+    if(p.statut!=='PARTANT'||!p.dernierRapportDirect) continue;
+    const num     = p.numPmu;
+    const prevC   = S.prevCotes[num];
+    const curC    = p.dernierRapportDirect.rapport;
+    if(!prevC||!curC||curC>=prevC) continue;
+
+    const drop=(prevC-curC)/prevC*100;
+    if(drop<CFG.dropPct) continue;
+    if(curC>CFG.tgMaxCote) continue;  // même filtre que le serveur
+
+    S.alertCount[num]=(S.alertCount[num]||0)+1;
+    // Flash visuel sur la ligne (le son/la carte vient de pollSrvAlerts pour éviter le doublon)
+    const row=document.getElementById(`row-${num}`);
+    if(row){
+      row.classList.add('dropping-strong');
+      setTimeout(()=>row.classList.remove('dropping-strong'),1200);
+    }
+  }
+}
+
+// ── RENDU TABLE ───────────────────────────────────────
+function renderTable() {
+  const container=document.getElementById('participants');
+
+  // Tri : chevaux avec alerte en premier, puis par cote croissante
+  const sorted=[...S.participants].sort((a,b)=>{
+    const aa=S.alertCount[a.numPmu]||0, bb=S.alertCount[b.numPmu]||0;
+    if(aa!==bb) return bb-aa;
+    return (a.dernierRapportDirect?.rapport??9999)-(b.dernierRapportDirect?.rapport??9999);
+  });
+
+  // Filtre : affiche les chevaux cote ≤ tgMaxCote, ou ayant une alerte, ou avec chute visible
+  const visible=sorted.filter(p=>{
+    if(p.statut==='NON_PARTANT') return false;
+    const cur=p.dernierRapportDirect?.rapport;
+    if(cur==null) return false;
+    if(cur<=CFG.tgMaxCote) return true;
+    if((S.alertCount[p.numPmu]||0)>0) return true;
+    // FIX v6 : montre aussi les chevaux avec chute significative même si cote > filtre
+    const prev=S.prevCotes[p.numPmu];
+    if(prev&&cur<prev&&(prev-cur)/prev*100>=CFG.dropPct) return true;
+    return false;
+  });
+
+  const visIds=new Set(visible.map(p=>`row-${p.numPmu}`));
+  for(const row of [...container.children]) if(!visIds.has(row.id)) row.remove();
+
+  for(let i=0;i<visible.length;i++) {
+    const p=visible[i];
+    const fav=p.dernierRapportDirect?.favoris;
+    const curC=p.dernierRapportDirect?.rapport??'—';
+    const prevC=S.prevCotes[p.numPmu]??'—';
+    const alerts=S.alertCount[p.numPmu]||0;
+
+    // Calcul delta
+    let deltaTxt='—', deltaClass='flat', liveColor='var(--text)';
+    if(prevC!=='—'&&curC!=='—') {
+      const drop=(prevC-curC)/prevC*100;
+      if(drop>0) {
+        deltaTxt=`−${drop.toFixed(1)}%`;
+        if(drop>=CFG.dropPct)     { deltaClass='hot';    liveColor='var(--red)';    }
+        else if(drop>=5)           { deltaClass='warm';   liveColor='var(--orange)'; }
+        else if(drop>=2)           { deltaClass='slight'; liveColor='var(--yellow)'; }
+        else                       { deltaClass='slight'; }
+      } else if(drop<0) {
+        deltaTxt=`+${Math.abs(drop).toFixed(1)}%`;
+        deltaClass='up';
+      } else {
+        deltaTxt='='; deltaClass='flat';
+      }
+    }
+
+    const alertBadge=alerts>0?`<span class="alert-badge">🔥×${alerts}</span>`:'';
+
+    let row=document.getElementById(`row-${p.numPmu}`);
+    if(!row) {
+      row=document.createElement('div');
+      row.id=`row-${p.numPmu}`;
+      row.className=`horse${fav?' fav':''}`;
+      row.innerHTML=`
+        <span class="hnum">${p.numPmu}</span>
+        <div><div class="hname">${p.nom}${alertBadge}</div></div>
+        <span class="clive" style="color:${liveColor}">${curC}</span>
+        <span class="cprev">${prevC}</span>
+        <span class="cdelta ${deltaClass}">${deltaTxt}</span>`;
+      container.appendChild(row);
+    } else {
+      const cells=row.children;
+      const nameDiv=cells[1].querySelector('.hname');
+      const celLive=cells[2], celPrev=cells[3], celDelta=cells[4];
+
+      // Mise à jour nom + badge
+      const newName=`${p.nom}${alertBadge}`;
+      if(nameDiv.innerHTML!==newName) nameDiv.innerHTML=newName;
+
+      // Flash si LIVE change
+      if(celLive.textContent!==String(curC)) {
+        celLive.textContent=String(curC);
+        celLive.classList.add('flash-cell');
+        setTimeout(()=>celLive.classList.remove('flash-cell'),400);
+      }
+      if(celLive.style.color!==liveColor) celLive.style.color=liveColor;
+      if(celPrev.textContent!==String(prevC)) celPrev.textContent=String(prevC);
+      if(celDelta.textContent!==deltaTxt) celDelta.textContent=deltaTxt;
+      if(celDelta.className!==`cdelta ${deltaClass}`) celDelta.className=`cdelta ${deltaClass}`;
+    }
+
+    // Classe dropping si alerte récente
+    row.classList.toggle('dropping', alerts>0 && deltaClass!=='hot');
+    if(container.children[i]!==row) container.insertBefore(row,container.children[i]||null);
+  }
+}
+
+// ── ALERTES ───────────────────────────────────────────
+function addAlert(type, icon, msg, opts={}) {
+  if(type==='info' && (msg.startsWith('Programme :') || msg.includes('courses') || msg.startsWith('Aucun'))) return;
+
+  const list=document.getElementById('alerts-list');
+  const item=document.createElement('div');
+  item.className=`aitem ${type}`;
+
+  if(type==='drop') {
+    const keyMatch  = msg.match(/^\[([^\]]+)\]\s*/);
+    const raceKey   = opts.raceKey||(keyMatch?keyMatch[1]:'');
+    const cleanMsg  = keyMatch?msg.slice(keyMatch[0].length):msg;
+    const numMatch  = cleanMsg.match(/^(\d+)\s*[—–-]\s*/);
+    const horseNum  = opts.num||(numMatch?numMatch[1]:'');
+    const afterNum  = numMatch?cleanMsg.slice(numMatch[0].length):cleanMsg;
+    const nameMatch = afterNum.match(/^(.+?)\s+chute\s+([\d.]+)→([\d.]+)\s*\(([-−][\d.]+)%\)/);
+    const horseName = opts.name||(nameMatch?nameMatch[1]:afterNum);
+    const fromCote  = opts.from||(nameMatch?nameMatch[2]:'');
+    const toCote    = opts.to  ||(nameMatch?nameMatch[3]:'');
+    const dropPct   = opts.pct ||(nameMatch?nameMatch[4]:'');
+    const time      = opts.time||timeNow();
+    const countN    = opts.count||0;
+
+    item.innerHTML=`
+      <div class="acard-line">
+        <span class="acard-key">🚨 ${raceKey}</span>
+        ${horseNum?`<span class="acard-horse-num">${horseNum}</span>`:''}
+        <span class="acard-hname">${horseName}</span>
+        <div class="acard-cotes">
+          <span class="acard-cote-from">${fromCote}</span>
+          <span class="acard-arrow">➡</span>
+          <span class="acard-cote-to">${toCote}</span>
+          <span class="acard-drop-pct">${dropPct}%</span>
+        </div>
+        ${countN>1?`<span class="acard-count">×${countN}</span>`:''}
+        <span class="acard-time">${time}</span>
+      </div>`;
+  } else if(type==='arrival') {
+    const time=opts.time||timeNow();
+    item.innerHTML=`
+      <div class="acard-header">
+        <span class="acard-key">🏁 ${opts.raceKey||''}</span>
+        <span class="acard-time">${time}</span>
+      </div>
+      <div class="acard-body">
+        <div class="acard-arrival-title">ARRIVÉE PROVISOIRE</div>
+        <div class="acard-arrival-horses">
+          ${(opts.horses||[]).map((h,i)=>`
+            <div class="acard-arrival-pos">
+              <span class="acard-arrival-rank">${i+1}${i===0?'er':'e'}</span>
+              <span class="acard-arrival-num">${h.num}</span>
+              <span class="acard-arrival-name">${h.name}</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  } else {
+    item.innerHTML=`<div class="acard-body" style="padding:6px 10px"><span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">${timeNow()}</span> <span style="font-size:13px;color:var(--text2)">${icon} ${msg}</span></div>`;
+  }
+
+  list.prepend(item);
+  while(list.children.length>CFG.maxAlerts) list.removeChild(list.lastChild);
+
+  if(type!=='info') {
+    S.alertTotal++;
+    const badge=document.getElementById('abadge');
+    badge.textContent=S.alertTotal;
+    badge.style.display='inline';
+  }
+}
+function clearAlerts() { document.getElementById('alerts-list').innerHTML=''; S.alertTotal=0; document.getElementById('abadge').style.display='none'; }
+
+// ── ARRIVÉE PROVISOIRE ────────────────────────────────
+const _arrivalSeen=new Set();
+async function checkArrival(race) {
+  const key=`R${race.reunion}C${race.course}`;
+  if(_arrivalSeen.has(key)) return;
+  try {
+    const url=`/api/pmu/parts/programme/${datePmu(S.today)}/R${race.reunion}/C${race.course}/rapports-definitifs?specialisation=OFFLINE`;
+    const r=await fetch(url,{cache:'no-store'});
+    if(!r.ok) return;
+    const data=await r.json();
+    const rapports=data.rapports||data.listeRapports||[];
+    const arrivee=rapports.find(r=>r.typePari==='SIMPLE_GAGNANT'||r.combinaison);
+    if(!arrivee) return;
+    const nums=arrivee.combinaison||[];
+    if(!nums.length) return;
+    _arrivalSeen.add(key);
+    const horses=nums.slice(0,4).map(n=>{
+      const p=S.participants.find(x=>x.numPmu===n);
+      return {num:n,name:p?p.nom.split(' ').slice(0,2).join(' '):`N°${n}`};
+    });
+    addAlert('arrival','🏁','',{raceKey:key,horses});
+  } catch(_){}
+}
+
+// ── CHARGEMENT HISTORIQUE ALERTES ─────────────────────
+async function loadAlertHistory() {
+  try {
+    const r=await fetch('/api/alerts');
+    if(!r.ok) return;
+    const alerts=await r.json();
+    // FIX v6 : affiche tout l'historique serveur (persisté sur disque)
+    // sans filtre sur tgMaxCote — le serveur est la source de vérité
+    for(const a of [...alerts].reverse()) {
+      const key=a.ts+a.msg;
+      S.srvAlertsSeen.add(key);
+      if(a.type!=='drop') continue;
+      const time=a.ts?a.ts.slice(11,19):'—';
+      addAlertFromSrvMsg(a.msg,time);
+    }
+  } catch(_){}
+}
+
+function addAlertFromSrvMsg(msg,time) {
+  const keyMatch=msg.match(/^\[([^\]]+)\]\s*/);
+  const raceKey=keyMatch?keyMatch[1]:'';
+  const rest=keyMatch?msg.slice(keyMatch[0].length):msg;
+  // Format v3 : "#3 NOMCHEVAL chute PREV→CUR (−X%) — alerte #N"
+  const numMatch=rest.match(/^#(\d+)\s+/);
+  const horseNum=numMatch?numMatch[1]:'';
+  const afterNum=numMatch?rest.slice(numMatch[0].length):rest;
+  const m=afterNum.match(/^(.+?)\s+chute\s+([\d.]+)→([\d.]+)\s*\(([-−][\d.]+)%\)/);
+  // FIX : incrémenter S.alertCount pour que la flamme apparaisse dans le tableau
+  if(horseNum) {
+    S.alertCount[horseNum]=(S.alertCount[horseNum]||0)+1;
+    renderTable();
+  }
+  if(!m) { addAlert('drop','🔥',msg,{time}); return; }
+  addAlert('drop','🔥',msg,{raceKey,num:horseNum,name:m[1],from:m[2],to:m[3],pct:m[4],time});
+}
+
+// ── STATUS ────────────────────────────────────────────
+function setStatus(ok) { document.getElementById('status-dot').className=ok?'':'err'; }
+function setLoadSub(t) { const e=document.getElementById('load-sub'); if(e) e.textContent=t; }
+
+// ── NAVIGATION BOUTONS ────────────────────────────────
+function updateNav() {
+  const idx=effectiveIdx(),len=S.programme.length;
+  document.getElementById('btn-prev').disabled=idx<=0;
+  document.getElementById('btn-next').disabled=idx>=len-1;
+}
+document.getElementById('btn-prev').onclick=()=>{ const i=effectiveIdx(); if(i>0){S.manualIdx=i-1;onRaceChange();updateNav();} };
+document.getElementById('btn-next').onclick=()=>{ const i=effectiveIdx(); if(i<S.programme.length-1){S.manualIdx=i+1;onRaceChange();updateNav();} };
+
+// ── AUTO-SWITCH ───────────────────────────────────────
+let _lastAutoIdx=-1;
+function autoSwitch() { if(!isAuto()) return; const n=findNext(); if(n!==_lastAutoIdx){_lastAutoIdx=n;onRaceChange();} }
+
+// ── FETCH PARTICIPANTS avec ETag ──────────────────────
+async function fetchPartsWithEtag(url,timeoutMs) {
+  const ctrl=new AbortController(),id=setTimeout(()=>ctrl.abort(),timeoutMs);
+  const headers={};
+  if(_etags[url]) headers['If-None-Match']=_etags[url];
+  try {
+    const r=await fetch(url,{cache:'no-store',signal:ctrl.signal,headers});
+    clearTimeout(id);
+    if(r.status===304) return null;
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const etag=r.headers.get('ETag');
+    if(etag) _etags[url]=etag;
+    const data=await r.json();
+    return data.participants||[];
+  } catch(e) { clearTimeout(id); throw e; }
+}
+
+// ── BOUCLE COTES — poll fixe 5s ──────────────────────
+async function cotesLoop() {
+  const generation=++_fetchGeneration;
+  let syncDone=false;
+
+  while(true) {
+    if(_fetchGeneration!==generation) return;
+    if(S.programme.length===0){ await sleep(200); continue; }
+
+    const race=S.programme[effectiveIdx()];
+    const secsLeft=Math.round((race.depart-Date.now())/1000);
+    const nowInWindow=(secsLeft>=0&&secsLeft<=CFG.windowSecs);
+
+    // Entrée dans la fenêtre
+    if(nowInWindow&&!S.inWindow) {
+      S.inWindow=true;
+      enterWindowBeep();
+      const badge=document.getElementById('watch-badge');
+      badge.className='active';
+      badge.textContent='👁 SURVEILLANCE';
+      badge.style.display='inline-block';
+      // Sync serveur si l'onglet vient d'ouvrir
+      if(!syncDone) { syncDone=true; syncFromServer(race); }
+    }
+    if(!nowInWindow&&S.inWindow&&secsLeft<0) {
+      S.inWindow=false;
+      const badge=document.getElementById('watch-badge');
+      badge.className='done';
+      badge.textContent='✓ TERMINÉ';
+    }
+
+    const url=`${PMU_BASE_PARTS}/programme/${datePmu(S.today)}/R${race.reunion}/C${race.course}/participants?specialisation=OFFLINE`;
+    const t0=performance.now();
+
+    try {
+      const parts=await fetchPartsWithEtag(url,CFG.fetchTimeoutMs);
+      if(_fetchGeneration!==generation) return;
+      const ms=Math.round(performance.now()-t0);
+      addLatency(ms);
+      S.lastFetchMs=ms;
+      setStatus(true);
+
+      const latColor=ms<200?'#29c98a':ms<500?'#f5c842':'#f0445a';
+      document.getElementById('ts').innerHTML=`↻ ${timeNow()} <span style="color:${latColor};font-weight:600">${ms}ms</span>`;
+
+      if(parts!==null) {
+        S.participants=parts;
+
+        // 1. Rendu avec prevCotes = poll d'AVANT → Δ5s visible
+        renderTable();
+
+        // 2. Détection chutes (compare cotes actuelles vs prevCotes d'avant)
+        if(nowInWindow) checkDrops();
+
+        // 3. On écrase la référence APRÈS le rendu
+        const newPrev={};
+        for(const p of parts) {
+          if(p.statut==='PARTANT'&&p.dernierRapportDirect?.rapport) {
+            newPrev[p.numPmu]=p.dernierRapportDirect.rapport;
+          }
+        }
+        S.prevCotes=newPrev;
+      }
+    } catch(e) {
+      if(_fetchGeneration!==generation) return;
+      setStatus(false);
+      const ms=Math.round(performance.now()-t0);
+      document.getElementById('ts').innerHTML=`⚠ ${timeNow()} <span style="color:var(--red)">${ms}ms ERR</span>`;
+      await sleep(500);
+    }
+
+    await sleep(CFG.pollMs);
+  }
+}
+
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+// ── TICK (toutes les secondes) ────────────────────────
+async function tick() {
+  S.tick++;
+  if(S.programme.length===0) return;
+  autoSwitch();
+  const idx=effectiveIdx();
+  S.curIdx=idx;
+  const race=S.programme[idx];
+  const secsLeft=Math.round((race.depart-Date.now())/1000);
+
+  document.getElementById('race-code').textContent=`R${race.reunion} · C${race.course}`;
+  document.getElementById('race-name').textContent=`${race.hip?race.hip+' — ':''}${race.libelle}`;
+  document.getElementById('race-sub').textContent=race.disc;
+  document.getElementById('race-counter').textContent=`${idx+1}/${S.programme.length}`;
+
+  const cd=document.getElementById('countdown');
+  cd.textContent=fmtCd(secsLeft);
+  if(secsLeft<0)        { cd.style.color='var(--text2)'; cd.style.animation=''; cd.style.textShadow='none'; }
+  else if(secsLeft<=30) { cd.style.color='var(--red)';    cd.style.animation='blink .45s infinite'; cd.style.textShadow='0 0 12px rgba(240,68,85,.4)'; }
+  else if(secsLeft<=120){ cd.style.color='var(--orange)'; cd.style.animation=''; cd.style.textShadow='0 0 12px rgba(240,120,64,.3)'; }
+  else                  { cd.style.color='var(--green)';  cd.style.animation=''; cd.style.textShadow='0 0 14px rgba(31,212,126,.35)'; }
+
+  const pct=Math.max(0,Math.min(100,(1-Math.max(0,secsLeft)/3600)*100));
+  document.getElementById('prog-fill').style.width=pct+'%';
+
+  // Arrivée provisoire 2-10 min après le départ
+  const secsAfter=-secsLeft;
+  if(secsAfter>=120&&secsAfter<=600) checkArrival(race);
+
+  // Refresh programme périodique
+  if(S.tick%CFG.progRefreshSecs===0) {
+    delete _progCache[S.today];
+    const prevLen=S.programme.length;
+    await loadProg();
+    if(S.programme.length!==prevLen) updateNav();
+  }
+}
+
+// ── POLL ALERTES SERVEUR (toutes les 5s) ─────────────
+setInterval(pollSrvAlerts, 5000);
+
+// ── BOOT ─────────────────────────────────────────────
+async function boot() {
+  document.getElementById('loading').style.display='flex';
+  S.today=dateStr(new Date());
+  let ok=await loadProg();
+
+  if(!ok||S.programme.length===0) {
+    const jours=['dim','lun','mar','mer','jeu','ven','sam'];
+    setLoadSub('RECHERCHE DU PROCHAIN PROGRAMME...');
+    for(let offset=1;offset<=7;offset++) {
+      const d=new Date();d.setDate(d.getDate()+offset);
+      const ds=dateStr(d);
+      setLoadSub(`ESSAI ${ds.slice(6)}/${ds.slice(4,6)}...`);
+      try {
+        const r=await fetchWithTimeout(`${PMU_BASE_PROG}/programme/${datePmu(ds)}?specialisation=OFFLINE`,{cache:'no-store'});
+        if(!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data=await r.json();
+        const races=[];
+        for(const ru of(data?.programme?.reunions||[])) {
+          const hip=ru.hippodrome?.libelleCourt||ru.hippodrome?.libelleLong||`R${ru.numOfficiel}`;
+          for(const co of(ru.courses||[])) races.push({reunion:ru.numOfficiel,course:co.numOrdre,depart:co.heureDepart,libelle:co.libelle||co.libelleCourt||`Course ${co.numOrdre}`,hip,disc:co.discipline||co.specialite||''});
+        }
+        if(races.length){S.today=ds;S.programme=races.sort((a,b)=>a.depart-b.depart);S.lastProg=Date.now();setStatus(true);break;}
+      } catch(_){}
+    }
+  }
+
+  if(S.programme.length>0){_lastAutoIdx=findNext();S.manualIdx=-1;updateNav();}
+
+  document.getElementById('loading').style.display='none';
+  await loadAlertHistory();
+  pollSrvAlerts();
+  tick();
+  setInterval(tick,1000);
+  cotesLoop();
+}
+
+boot();
+</script>
+</body>
+</html>
