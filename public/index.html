@@ -432,52 +432,44 @@ body {
 }
 #clr-btn:active { color:var(--text2); }
 
-/* ── ALERT CARDS ── */
+/* ── ALERT CARDS — compact single-line layout ── */
 .aitem {
-  margin: 5px 8px;
-  border-radius: 8px;
+  margin: 4px 8px;
+  border-radius: 6px;
   animation: slideIn .2s ease;
   overflow: hidden;
 }
 .aitem.drop {
   background: linear-gradient(135deg, rgba(26,13,13,.95) 0%, rgba(18,9,9,.95) 100%);
   border: 1px solid rgba(240,68,85,.25);
-  box-shadow: 0 2px 10px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,68,85,.07);
+  box-shadow: 0 2px 8px rgba(0,0,0,.3), inset 0 1px 0 rgba(240,68,85,.07);
 }
 .aitem.info {
   background: rgba(20,25,41,.7);
   border: 1px solid rgba(36,48,80,.6);
 }
-.acard-header {
+/* Single-line compact card */
+.acard-line {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 6px 10px 3px;
-  border-bottom: 1px solid rgba(240,68,85,.1);
+  gap: 6px;
+  padding: 6px 10px;
+  flex-wrap: nowrap;
+  min-width: 0;
 }
 .acard-key {
   font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 700;
   color: var(--red);
-  letter-spacing: 2px;
+  letter-spacing: 1.5px;
+  flex-shrink: 0;
 }
 .acard-time {
   font-family: var(--font-mono);
   font-size: 9px;
   color: var(--text3);
-}
-.acard-body { padding: 5px 10px 7px; }
-.acard-horse {
-  font-family: var(--font-ui);
-  font-size: 15px;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: .2px;
-  margin-bottom: 4px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+  flex-shrink: 0;
 }
 .acard-horse-num {
   font-family: var(--font-mono);
@@ -486,43 +478,48 @@ body {
   background: rgba(255,255,255,.06);
   padding: 1px 4px;
   border-radius: 3px;
+  flex-shrink: 0;
+}
+.acard-hname {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
 }
 .acard-cotes {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 4px;
   font-family: var(--font-mono);
+  flex-shrink: 0;
 }
 .acard-cote-from {
-  font-size: 16px;
+  font-size: 13px;
   color: var(--text2);
   text-decoration: line-through;
   text-decoration-color: rgba(240,68,85,.4);
 }
-.acard-arrow { font-size: 14px; color: var(--red); }
+.acard-arrow { font-size: 11px; color: var(--red); }
 .acard-cote-to {
-  font-size: 22px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--red);
-  text-shadow: 0 0 8px rgba(240,68,85,.4);
+  text-shadow: 0 0 6px rgba(240,68,85,.4);
 }
 .acard-drop-pct {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--red);
   background: rgba(240,68,85,.1);
   border: 1px solid rgba(240,68,85,.2);
-  padding: 2px 7px;
+  padding: 1px 5px;
   border-radius: 20px;
-  margin-left: auto;
-}
-.acard-context {
-  font-size: 10px;
-  color: var(--text3);
-  margin-top: 3px;
-  font-family: var(--font-mono);
-  display: flex;
-  gap: 8px;
+  flex-shrink: 0;
 }
 /* badge compteur d'alertes sur une carte */
 .acard-count {
@@ -533,6 +530,7 @@ body {
   border: 1px solid rgba(240,120,64,.25);
   padding: 1px 5px;
   border-radius: 3px;
+  flex-shrink: 0;
 }
 
 /* Carte arrivée */
@@ -995,22 +993,18 @@ function addAlert(type, icon, msg, opts={}) {
     const countN    = opts.count||0;
 
     item.innerHTML=`
-      <div class="acard-header">
+      <div class="acard-line">
         <span class="acard-key">🚨 ${raceKey}</span>
-        <span class="acard-time">${time}</span>
-      </div>
-      <div class="acard-body">
-        <div class="acard-horse">
-          ${horseNum?`<span class="acard-horse-num">${horseNum}</span>`:''}
-          <span>${horseName}</span>
-          ${countN>1?`<span class="acard-count">×${countN}</span>`:''}
-        </div>
+        ${horseNum?`<span class="acard-horse-num">${horseNum}</span>`:''}
+        <span class="acard-hname">${horseName}</span>
         <div class="acard-cotes">
           <span class="acard-cote-from">${fromCote}</span>
-          <span class="acard-arrow">➡️</span>
+          <span class="acard-arrow">➡</span>
           <span class="acard-cote-to">${toCote}</span>
           <span class="acard-drop-pct">${dropPct}%</span>
         </div>
+        ${countN>1?`<span class="acard-count">×${countN}</span>`:''}
+        <span class="acard-time">${time}</span>
       </div>`;
   } else if(type==='arrival') {
     const time=opts.time||timeNow();
@@ -1098,6 +1092,11 @@ function addAlertFromSrvMsg(msg,time) {
   const horseNum=numMatch?numMatch[1]:'';
   const afterNum=numMatch?rest.slice(numMatch[0].length):rest;
   const m=afterNum.match(/^(.+?)\s+chute\s+([\d.]+)→([\d.]+)\s*\(([-−][\d.]+)%\)/);
+  // FIX : incrémenter S.alertCount pour que la flamme apparaisse dans le tableau
+  if(horseNum) {
+    S.alertCount[horseNum]=(S.alertCount[horseNum]||0)+1;
+    renderTable();
+  }
   if(!m) { addAlert('drop','🔥',msg,{time}); return; }
   addAlert('drop','🔥',msg,{raceKey,num:horseNum,name:m[1],from:m[2],to:m[3],pct:m[4],time});
 }
