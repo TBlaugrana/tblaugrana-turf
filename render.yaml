@@ -14,4 +14,4 @@ services:
       - key: TG_MAX_COTE
         value: "10"
       - key: DROP_PCT
-        value: "20"
+        value: "10"
