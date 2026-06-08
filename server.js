@@ -1,10 +1,16 @@
 // ═══════════════════════════════════════════════════════════════
-//  TBlaugranaTurf — Serveur Node.js v2
+//  TBlaugranaTurf — Serveur Node.js v2.1
 //  • Proxy PMU (contourne CORS)
 //  • Moteur de surveillance H24 côté serveur
-//    → snapshot auto à 1min du départ
-//    → détection chute de cote ≥ 20%
+//    → snapshot auto à 15s du départ
+//    → détection chute de cote ≥ 15%
 //    → alertes Telegram même onglet fermé
+//  OPTIMISATIONS v2.1 :
+//    → Boucle indépendante par course (pas de blocage inter-courses)
+//    → ETag côté fetchJson interne (évite de parser si données inchangées)
+//    → Timeout réduit 4000ms + 1 seul retry
+//    → Polling 300ms zone critique (<90s), 400ms zone hot (<30s)
+//    → Seuil alerte abaissé à 15%
 // ═══════════════════════════════════════════════════════════════
 
 const express = require('express');
@@ -21,11 +27,12 @@ const CFG = {
   tgToken:      process.env.TG_TOKEN   || '8961502220:AAGlpLomYVMXRQgrJsPp5M4m-omFPJPBKoU',
   tgChatIds:    (process.env.TG_CHATS  || '625118343,8288460384').split(',').map(s => s.trim()),
   tgMaxCote:    parseFloat(process.env.TG_MAX_COTE  || '10'),
-  dropPct:      parseFloat(process.env.DROP_PCT     || '20'),
-  snapSecs:     15,    // snapshot à 15s du départ
-  postDepartMs: 3 * 60 * 1000,  // continue 3min après le départ (retards de départ)
-  pollMs:       800,   // intervalle de polling en dehors de la zone critique
-  pollCritMs:   800,   // intervalle dans la zone critique (< 90s)
+  dropPct:      parseFloat(process.env.DROP_PCT     || '15'),   // ← 15% (était 20%)
+  snapSecs:     15,               // snapshot à 15s du départ
+  postDepartMs: 3 * 60 * 1000,   // continue 3min après le départ
+  pollMs:       700,              // hors zone critique
+  pollCritMs:   300,              // < 90s du départ → ~3 req/s
+  pollHotMs:    200,              // < 30s du départ → ~5 req/s
 };
 
 const PMU_PROG  = 'https://online.turfinfo.api.pmu.fr/rest/client/61';
@@ -73,13 +80,13 @@ app.get('/api/pmu/parts/*', (req, res) => {
     req.query ? new URLSearchParams(req.query).toString() : '', res);
 });
 
-// ── ÉTAT SERVEUR (exposé au front via /api/state) ───────────────
-// Le front peut interroger l'état du moteur sans reconstruire les données.
+// ── ÉTAT SERVEUR ────────────────────────────────────────────────
 const watcher = {
   programme:    [],    // [{reunion,course,depart,libelle,hip,disc}]
   today:        '',
   snapMap:      {},    // { "R1C3": { cotes:{numPmu:snap}, done:true, alertedSet:Set } }
   lastAlerts:   [],    // 50 dernières alertes pour le front
+  activeLoops:  new Set(), // clés des courses avec boucle déjà lancée
 };
 
 // ── UTILITAIRES ────────────────────────────────────────────────
@@ -87,23 +94,36 @@ const pad = n => String(n).padStart(2, '0');
 function dateStr(d) { return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`; }
 function datePmu(s) { return s.slice(6,8)+s.slice(4,6)+s.slice(0,4); }
 
-async function fetchJson(url, timeoutMs = 6000, retries = 2) {
+// Cache ETag pour les appels internes serveur→PMU
+const fetchEtags = {};
+
+// fetchJson optimisé : ETag interne + timeout 4000ms + 1 seul retry
+async function fetchJson(url, timeoutMs = 4000, retries = 1) {
   let lastErr;
   for (let attempt = 0; attempt <= retries; attempt++) {
-    const ctrl = new AbortController();
-    const id   = setTimeout(() => ctrl.abort(), timeoutMs);
+    const ctrl    = new AbortController();
+    const id      = setTimeout(() => ctrl.abort(), timeoutMs);
+    const headers = { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' };
+    if (fetchEtags[url]) headers['If-None-Match'] = fetchEtags[url];
+
     try {
-      const r = await fetch(url, {
-        signal:  ctrl.signal,
-        headers: { 'Accept':'application/json', 'User-Agent':'Mozilla/5.0' },
-      });
+      const r = await fetch(url, { signal: ctrl.signal, headers });
       clearTimeout(id);
+
+      const etag = r.headers.get('etag');
+      if (etag) fetchEtags[url] = etag;
+
+      // 304 = données inchangées → retourne null pour skip le traitement
+      if (r.status === 304) return null;
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       return await r.json();
     } catch(e) {
       clearTimeout(id);
       lastErr = e;
-      if (attempt < retries) await new Promise(r => setTimeout(r, 200));
+      // Retry uniquement sur timeout/réseau, pas sur 4xx
+      if (attempt < retries && e.name !== 'AbortError') {
+        await new Promise(r => setTimeout(r, 150));
+      }
     }
   }
   throw lastErr;
@@ -139,7 +159,8 @@ async function loadProgramme() {
     const ds = dateStr(d);
     try {
       const url  = `${PMU_PROG}/programme/${datePmu(ds)}?specialisation=OFFLINE`;
-      const data = await fetchJson(url);
+      const data = await fetchJson(url, 6000, 2);
+      if (!data) continue; // 304
       const races = [];
       for (const ru of (data?.programme?.reunions || [])) {
         const hip = ru.hippodrome?.libelleCourt || ru.hippodrome?.libelleLong || `R${ru.numOfficiel}`;
@@ -165,12 +186,6 @@ async function loadProgramme() {
 }
 
 // ── MOTEUR DE SURVEILLANCE ─────────────────────────────────────
-// Tourne en permanence côté serveur.
-// Pour chaque course dans la fenêtre [−60s, +3min] :
-//   1. Snapshot des cotes à T−60s (si pas encore fait)
-//   2. Polling des cotes → détection chute ≥ DROP_PCT%
-//   3. Envoi Telegram si cheval ≤ tgMaxCote et chute ≥ DROP_PCT%
-
 function raceKey(r) { return `R${r.reunion}C${r.course}`; }
 
 function getOrCreateSnap(race) {
@@ -179,6 +194,19 @@ function getOrCreateSnap(race) {
     watcher.snapMap[k] = { cotes: {}, done: false, alertedSet: new Set() };
   }
   return watcher.snapMap[k];
+}
+
+// Retourne le délai de polling adapté au temps restant avant départ
+function pollDelay(secsLeft) {
+  if (secsLeft > 0 && secsLeft <= 30)  return CFG.pollHotMs;   // zone hot  : 200ms
+  if (secsLeft > 0 && secsLeft <= 90)  return CFG.pollCritMs;  // zone crit : 300ms
+  return CFG.pollMs;                                             // normal    : 700ms
+}
+
+// Vérifie si une course est encore dans la fenêtre de surveillance
+function isRaceActive(race) {
+  const ms = race.depart - Date.now();
+  return ms <= (CFG.snapSecs * 1000 + 10000) && ms >= -CFG.postDepartMs;
 }
 
 async function watchRace(race) {
@@ -190,7 +218,8 @@ async function watchRace(race) {
 
   let parts;
   try {
-    const data = await fetchJson(url, 5000);
+    const data = await fetchJson(url, 4000);
+    if (data === null) return; // 304 → données inchangées, rien à faire
     parts = data.participants || [];
   } catch(e) {
     console.error(`[WATCH][${key}] fetchParts erreur:`, e.message);
@@ -210,23 +239,23 @@ async function watchRace(race) {
   }
 
   // ── Détection chutes ──────────────────────────────────────────
-  if (!snap.done) return;  // snapshot pas encore pris
+  if (!snap.done) return;
 
   for (const p of parts) {
     if (p.statut !== 'PARTANT' || !p.dernierRapportDirect) continue;
-    if (snap.alertedSet.has(p.numPmu)) continue;  // déjà alerté ce cheval
+    if (snap.alertedSet.has(p.numPmu)) continue;
 
     const snapCote = snap.cotes[p.numPmu];
     const curCote  = p.dernierRapportDirect.rapport;
     if (!snapCote || !curCote) continue;
 
     const drop = (snapCote - curCote) / snapCote * 100;
-    if (drop < CFG.dropPct) continue;
+    if (drop < CFG.dropPct) continue; // seuil 15%
 
     snap.alertedSet.add(p.numPmu);
 
     const secsStr = secsLeft > 0 ? `⏱ ${secsLeft}s avant départ` : `🏁 ${Math.abs(secsLeft)}s après départ`;
-    const msg     = `[${key}] ${p.nom} chute ${snapCote}→${curCote} (−${drop.toFixed(0)}%)`;
+    const msg     = `[${key}] N°${p.numPmu} ${p.nom} chute ${snapCote}→${curCote} (−${drop.toFixed(0)}%)`;
     pushAlert('drop', '🔥', msg);
 
     // Telegram si cote finale ≤ tgMaxCote
@@ -241,19 +270,32 @@ async function watchRace(race) {
   }
 }
 
-// Courses actives : celles dont on est dans la fenêtre de surveillance
-function activeRaces() {
-  const now = Date.now();
-  return watcher.programme.filter(r => {
-    const ms = r.depart - now;
-    return ms <= CFG.snapSecs * 1000 + 10000   // dans les snapSecs+10s avant
-        && ms >= -CFG.postDepartMs;              // ou jusqu'à postDepartMs après
-  });
+// ── BOUCLE INDÉPENDANTE PAR COURSE ────────────────────────────
+// Chaque course active tourne dans sa propre boucle async,
+// sans bloquer les autres courses (même en cas de requête lente).
+async function watchRaceLoop(race) {
+  const key = raceKey(race);
+  watcher.activeLoops.add(key);
+  console.log(`[LOOP] Démarrage surveillance ${key}`);
+
+  try {
+    while (isRaceActive(race)) {
+      const secsLeft = Math.round((race.depart - Date.now()) / 1000);
+      await watchRace(race);
+      const delay = pollDelay(secsLeft);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  } catch(e) {
+    console.error(`[LOOP][${key}] Erreur inattendue:`, e.message);
+  } finally {
+    watcher.activeLoops.delete(key);
+    console.log(`[LOOP] Fin surveillance ${key}`);
+  }
 }
 
-// Boucle principale du moteur
+// Boucle principale : gère le programme et lance les boucles par course
 async function watcherLoop() {
-  let progLoaded = false;
+  let progLoaded   = false;
   let lastProgLoad = 0;
 
   while (true) {
@@ -261,26 +303,20 @@ async function watcherLoop() {
 
     // Recharge le programme toutes les 5 minutes ou si vide
     if (!progLoaded || watcher.programme.length === 0 || now - lastProgLoad > 5 * 60_000) {
-      progLoaded  = await loadProgramme();
+      progLoaded   = await loadProgramme();
       lastProgLoad = now;
     }
 
-    const races = activeRaces();
-
-    if (races.length > 0) {
-      // Surveille toutes les courses actives en parallèle
-      await Promise.allSettled(races.map(r => watchRace(r)));
-      // Zone critique → polling rapide
-      const mostUrgent = races.reduce((best, r) =>
-        Math.abs(r.depart - now) < Math.abs(best.depart - now) ? r : best
-      );
-      const secsLeft = Math.round((mostUrgent.depart - now) / 1000);
-      const delay = (secsLeft > 0 && secsLeft <= 90) ? CFG.pollCritMs : CFG.pollMs;
-      await new Promise(r => setTimeout(r, delay));
-    } else {
-      // Pas de course active → attendre 10s
-      await new Promise(r => setTimeout(r, 10_000));
+    // Lance une boucle dédiée pour chaque nouvelle course active
+    for (const race of watcher.programme) {
+      const key = raceKey(race);
+      if (isRaceActive(race) && !watcher.activeLoops.has(key)) {
+        watchRaceLoop(race); // fire-and-forget : pas d'await
+      }
     }
+
+    // La boucle principale vérifie toutes les 5s s'il y a de nouvelles courses à lancer
+    await new Promise(r => setTimeout(r, 5_000));
   }
 }
 
@@ -294,23 +330,21 @@ app.get('/api/snapstate', (req, res) => {
   if (!key) return res.json({});
   const snap = watcher.snapMap[key];
   if (!snap) return res.json({ done: false, cotes: {} });
-  // Convertit le Set en tableau pour JSON
   res.json({ done: snap.done, cotes: snap.cotes, alerted: [...snap.alertedSet] });
 });
 
 // Health check
 app.get('/health', (_, res) => res.json({
-  status:    'ok',
-  ts:        new Date().toISOString(),
-  today:     watcher.today,
-  races:     watcher.programme.length,
-  active:    activeRaces().length,
+  status:      'ok',
+  ts:          new Date().toISOString(),
+  today:       watcher.today,
+  races:       watcher.programme.length,
+  activeLoops: [...watcher.activeLoops],
 }));
 
 // ── DÉMARRAGE ───────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`TBlaugranaTurf v2 — port ${PORT}`);
-  // Lance le moteur en arrière-plan (n'arrête PAS le serveur si erreur)
+  console.log(`TBlaugranaTurf v2.1 — port ${PORT}`);
   watcherLoop().catch(e => {
     console.error('[WATCHER] Crash inattendu — relance dans 10s:', e);
     setTimeout(() => watcherLoop().catch(console.error), 10_000);
