@@ -375,8 +375,8 @@ body {
 
 /* ── ALERT CARDS ── */
 .aitem {
-  margin: 5px 8px;
-  border-radius: 8px;
+  margin: 3px 6px;
+  border-radius: 6px;
   animation: slideIn .2s ease;
   overflow: hidden;
 }
@@ -393,74 +393,76 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 10px 3px;
+  padding: 4px 8px 2px;
   border-bottom: 1px solid rgba(31,212,126,.08);
 }
 .acard-key {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   color: var(--accent2);
   letter-spacing: 2px;
 }
 .acard-time {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 8px;
   color: var(--text3);
 }
-.acard-body { padding: 5px 10px 7px; }
+.acard-body { padding: 3px 8px 5px; }
 .acard-horse {
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 700;
   color: #fff;
   letter-spacing: .2px;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
   display: flex;
   align-items: center;
   gap: 5px;
 }
 .acard-horse-num {
   font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text3);
-  background: rgba(255,255,255,.06);
+  font-size: 10px;
+  color: var(--accent2);
+  background: rgba(91,163,255,.1);
+  border: 1px solid rgba(91,163,255,.2);
   padding: 1px 4px;
   border-radius: 3px;
+  font-weight: 700;
 }
 .acard-cotes {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   font-family: var(--font-mono);
 }
 .acard-cote-from {
-  font-size: 16px;
+  font-size: 13px;
   color: var(--text2);
   text-decoration: line-through;
   text-decoration-color: rgba(240,68,85,.4);
 }
-.acard-arrow { font-size: 14px; color: var(--green); }
+.acard-arrow { font-size: 11px; color: var(--green); }
 .acard-cote-to {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--green);
   text-shadow: 0 0 8px rgba(31,212,126,.4);
 }
 .acard-drop-pct {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--green);
   background: rgba(31,212,126,.1);
   border: 1px solid rgba(31,212,126,.2);
-  padding: 2px 7px;
+  padding: 1px 6px;
   border-radius: 20px;
   margin-left: auto;
 }
 .acard-hip {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--text3);
-  margin-top: 3px;
+  margin-top: 2px;
   font-family: var(--font-mono);
 }
 
@@ -913,7 +915,8 @@ function addAlert(type, icon, msg, opts={}) {
     const keyMatch  = msg.match(/^\[([^\]]+)\]\s*/);
     const raceKey   = opts.raceKey || (keyMatch ? keyMatch[1] : '');
     const cleanMsg  = keyMatch ? msg.slice(keyMatch[0].length) : msg;
-    const numMatch  = cleanMsg.match(/^(\d+)\s*[—–-]\s*/);
+    // Supporte "N°12 NOM chute..." (format serveur v2.1) et "12 — NOM chute..." (ancien)
+    const numMatch  = cleanMsg.match(/^N°(\d+)\s+/) || cleanMsg.match(/^(\d+)\s*[—–-]\s*/);
     const horseNum  = opts.num || (numMatch ? numMatch[1] : '');
     const afterNum  = numMatch ? cleanMsg.slice(numMatch[0].length) : cleanMsg;
     const nameMatch = afterNum.match(/^(.+?)\s+chute\s+([\d.]+)→([\d.]+)\s*\(([-−]\d+)%\)/);
