@@ -23,7 +23,6 @@
   --green:     #1fd47e;
   --red:       #f04455;
   --yellow:    #f5c040;
-  --orange:    #f07840;
   --text:      #cdd8f0;
   --text2:     #6880b0;
   --text3:     #37456a;
@@ -191,7 +190,7 @@ body {
   margin-top: 1px;
 }
 
-/* ── DÉPART BAR ── */
+/* ── DÉPART BAR — compact & horizontal ── */
 #depart-bar {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -218,31 +217,21 @@ body {
   letter-spacing: -1px;
   text-shadow: 0 0 14px rgba(31,212,126,.35);
 }
-
-/* ── SURVEILLANCE BADGE (remplace snap-badge) ── */
-#watch-badge {
+#countdown.warn { color:var(--yellow); text-shadow:0 0 12px rgba(245,192,64,.3); }
+#countdown.crit { color:var(--red); animation:blink .45s infinite; text-shadow:0 0 12px rgba(240,68,85,.4); }
+#snap-badge {
   display: none;
+  background: rgba(245,192,64,.1);
+  border: 1px solid rgba(245,192,64,.35);
+  color: var(--yellow);
   font-size: 9px;
   font-family: var(--font-mono);
-  padding: 3px 7px;
+  padding: 2px 6px;
   border-radius: 4px;
   letter-spacing: 1px;
+  animation: glow 2s infinite;
   flex-shrink: 0;
 }
-#watch-badge.active {
-  display: inline-block;
-  background: rgba(240,120,64,.12);
-  border: 1px solid rgba(240,120,64,.4);
-  color: var(--orange);
-  animation: glow-orange 1.5s infinite;
-}
-#watch-badge.done {
-  display: inline-block;
-  background: rgba(55,69,106,.2);
-  border: 1px solid rgba(55,69,106,.4);
-  color: var(--text3);
-}
-
 #ts {
   font-family: var(--font-mono);
   font-size: 10px;
@@ -251,13 +240,13 @@ body {
   margin-left: auto;
 }
 
-/* ── TABLE HEADER — 5 colonnes : # NOM LIVE PREV Δ5s ── */
+/* ── TABLE HEADER ── */
 #th {
   background: var(--surface2);
   border-bottom: 1px solid var(--border2);
   padding: 5px 10px;
   display: grid;
-  grid-template-columns: 24px 1fr 52px 44px 62px;
+  grid-template-columns: 24px 1fr 52px 44px 58px;
   gap: 2px;
   font-size: 9px;
   letter-spacing: 1.5px;
@@ -278,7 +267,7 @@ body {
 }
 .horse {
   display: grid;
-  grid-template-columns: 24px 1fr 52px 44px 62px;
+  grid-template-columns: 24px 1fr 52px 44px 58px;
   gap: 2px;
   align-items: center;
   padding: 10px 10px;
@@ -296,18 +285,6 @@ body {
 .horse:active { background: rgba(61,142,240,.05); }
 .horse.np { opacity:.2; text-decoration:line-through; }
 .horse.fav .hname { color:var(--yellow); }
-
-/* État alerte glissante — pulsation orange */
-.horse.dropping {
-  background: rgba(240,120,64,.06);
-}
-.horse.dropping::before { width:3px; background:var(--orange); }
-.horse.dropping-strong {
-  background: rgba(240,68,85,.08);
-  animation: rowPulse 1s ease forwards;
-}
-.horse.dropping-strong::before { width:3px; background:var(--red); }
-
 .hnum {
   font-family: var(--font-mono);
   font-size: 13px;
@@ -328,53 +305,17 @@ body {
   letter-spacing: .1px;
   line-height: 1.3;
 }
-/* Colonne LIVE */
-.clive {
-  font-family: var(--font-mono);
-  font-size: 19px;
-  font-weight: 700;
-  text-align: right;
-  letter-spacing: -0.5px;
-  color: var(--text);
-  transition: color .3s;
-}
-/* Colonne PREV */
-.cprev {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  text-align: right;
-  color: var(--text3);
-}
-/* Colonne Δ5s */
-.cdelta {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  text-align: right;
-  font-weight: 700;
-  color: var(--text3);
-  transition: color .3s;
-}
-.cdelta.hot    { color: var(--red);    text-shadow: 0 0 6px rgba(240,68,85,.4); }
-.cdelta.warm   { color: var(--orange); }
-.cdelta.slight { color: var(--yellow); }
-.cdelta.up     { color: var(--text3); font-weight:400; }
-.cdelta.flat   { color: var(--text3); font-weight:400; }
-
-/* nb alertes badge sur le nom */
-.alert-badge {
-  display: inline-block;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  font-weight: 700;
-  color: var(--red);
-  background: rgba(240,68,85,.15);
-  border: 1px solid rgba(240,68,85,.3);
-  border-radius: 3px;
-  padding: 0 3px;
-  margin-left: 4px;
-  vertical-align: middle;
-  line-height: 1.6;
-}
+.cdirect { font-family:var(--font-mono); font-size:19px; font-weight:700; text-align:right; letter-spacing:-0.5px; }
+.csnap   { font-family:var(--font-mono); font-size:13px; text-align:right; color:var(--text3); }
+.cdrop   { font-family:var(--font-mono); font-size:13px; text-align:right; font-weight:700; }
+.cdrop.hot  { color:var(--green); text-shadow:0 0 6px rgba(31,212,126,.35); }
+.cdrop.warm { color:var(--yellow); }
+.cdrop.low  { color:var(--text3); font-weight:400; }
+.cdrop.up   { color:var(--red); }
+.horse.appeared { background:rgba(245,192,64,.05); }
+.horse.appeared::before { width:3px; background:var(--yellow); }
+.horse.alerted { background:rgba(31,212,126,.04); }
+.horse.alerted::before { width:3px; background:var(--green); }
 
 /* ── ALERTS ── */
 #alerts {
@@ -432,44 +373,52 @@ body {
 }
 #clr-btn:active { color:var(--text2); }
 
-/* ── ALERT CARDS — compact single-line layout ── */
+/* ── ALERT CARDS ── */
 .aitem {
-  margin: 4px 8px;
-  border-radius: 6px;
+  margin: 5px 8px;
+  border-radius: 8px;
   animation: slideIn .2s ease;
   overflow: hidden;
 }
 .aitem.drop {
-  background: linear-gradient(135deg, rgba(26,13,13,.95) 0%, rgba(18,9,9,.95) 100%);
-  border: 1px solid rgba(240,68,85,.25);
-  box-shadow: 0 2px 8px rgba(0,0,0,.3), inset 0 1px 0 rgba(240,68,85,.07);
+  background: linear-gradient(135deg, rgba(13,26,18,.95) 0%, rgba(9,19,14,.95) 100%);
+  border: 1px solid rgba(31,212,126,.22);
+  box-shadow: 0 2px 10px rgba(0,0,0,.35), inset 0 1px 0 rgba(31,212,126,.07);
 }
 .aitem.info {
   background: rgba(20,25,41,.7);
   border: 1px solid rgba(36,48,80,.6);
 }
-/* Single-line compact card */
-.acard-line {
+.acard-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  flex-wrap: nowrap;
-  min-width: 0;
+  justify-content: space-between;
+  padding: 6px 10px 3px;
+  border-bottom: 1px solid rgba(31,212,126,.08);
 }
 .acard-key {
   font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 700;
-  color: var(--red);
-  letter-spacing: 1.5px;
-  flex-shrink: 0;
+  color: var(--accent2);
+  letter-spacing: 2px;
 }
 .acard-time {
   font-family: var(--font-mono);
   font-size: 9px;
   color: var(--text3);
-  flex-shrink: 0;
+}
+.acard-body { padding: 5px 10px 7px; }
+.acard-horse {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: .2px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 .acard-horse-num {
   font-family: var(--font-mono);
@@ -478,59 +427,41 @@ body {
   background: rgba(255,255,255,.06);
   padding: 1px 4px;
   border-radius: 3px;
-  flex-shrink: 0;
-}
-.acard-hname {
-  font-family: var(--font-ui);
-  font-size: 14px;
-  font-weight: 700;
-  color: #fff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 1;
-  min-width: 0;
 }
 .acard-cotes {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 7px;
   font-family: var(--font-mono);
-  flex-shrink: 0;
 }
 .acard-cote-from {
-  font-size: 13px;
+  font-size: 16px;
   color: var(--text2);
   text-decoration: line-through;
   text-decoration-color: rgba(240,68,85,.4);
 }
-.acard-arrow { font-size: 11px; color: var(--red); }
+.acard-arrow { font-size: 14px; color: var(--green); }
 .acard-cote-to {
-  font-size: 16px;
+  font-size: 22px;
   font-weight: 700;
-  color: var(--red);
-  text-shadow: 0 0 6px rgba(240,68,85,.4);
+  color: var(--green);
+  text-shadow: 0 0 8px rgba(31,212,126,.4);
 }
 .acard-drop-pct {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  color: var(--red);
-  background: rgba(240,68,85,.1);
-  border: 1px solid rgba(240,68,85,.2);
-  padding: 1px 5px;
+  color: var(--green);
+  background: rgba(31,212,126,.1);
+  border: 1px solid rgba(31,212,126,.2);
+  padding: 2px 7px;
   border-radius: 20px;
-  flex-shrink: 0;
+  margin-left: auto;
 }
-/* badge compteur d'alertes sur une carte */
-.acard-count {
+.acard-hip {
+  font-size: 10px;
+  color: var(--text3);
+  margin-top: 3px;
   font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--orange);
-  background: rgba(240,120,64,.1);
-  border: 1px solid rgba(240,120,64,.25);
-  padding: 1px 5px;
-  border-radius: 3px;
-  flex-shrink: 0;
 }
 
 /* Carte arrivée */
@@ -559,7 +490,7 @@ body {
   min-width: 40px;
 }
 .acard-arrival-rank { font-family:var(--font-mono); font-size:8px; color:var(--text3); letter-spacing:1px; }
-.acard-arrival-num  { font-family:var(--font-mono); font-size:16px; font-weight:700; color:var(--accent2); line-height:1.2; }
+.acard-arrival-num { font-family:var(--font-mono); font-size:16px; font-weight:700; color:var(--accent2); line-height:1.2; }
 .acard-arrival-name { font-size:8px; color:var(--text3); text-align:center; max-width:55px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
 /* ── LOADING ── */
@@ -579,14 +510,15 @@ body {
 .lsub { font-family:var(--font-mono); font-size:10px; color:var(--text3); letter-spacing:2px; text-transform:uppercase; }
 
 /* ── ANIMATIONS ── */
-@keyframes pulse      { 0%,100%{ opacity:1; transform:scale(1) } 50%{ opacity:.3; transform:scale(.8) } }
-@keyframes blink      { 0%,100%{ opacity:1 } 50%{ opacity:.1 } }
-@keyframes spin       { to{ transform:rotate(360deg) } }
-@keyframes slideIn    { from{ transform:translateY(-4px);opacity:0 } to{ transform:translateY(0);opacity:1 } }
-@keyframes rowPulse   { 0%{ background:rgba(240,68,85,.25) } 100%{ background:rgba(240,68,85,.08) } }
-@keyframes glow-orange{ 0%,100%{ box-shadow:0 0 4px rgba(240,120,64,.2) } 50%{ box-shadow:0 0 10px rgba(240,120,64,.6) } }
-@keyframes flash-live { 0%{ color:#fff } 100%{ color:inherit } }
-.flash-cell { animation: flash-live .4s ease forwards; }
+@keyframes pulse   { 0%,100%{ opacity:1; transform:scale(1) } 50%{ opacity:.3; transform:scale(.8) } }
+@keyframes blink   { 0%,100%{ opacity:1 } 50%{ opacity:.1 } }
+@keyframes spin    { to{ transform:rotate(360deg) } }
+@keyframes slideIn { from{ transform:translateY(-4px);opacity:0 } to{ transform:translateY(0);opacity:1 } }
+@keyframes rowFlash{ 0%{ background:rgba(31,212,126,.2) } 100%{ background:transparent } }
+@keyframes glow    { 0%,100%{ box-shadow:0 0 4px rgba(245,192,64,.2) } 50%{ box-shadow:0 0 10px rgba(245,192,64,.5) } }
+.flash { animation: rowFlash 1s ease forwards; }
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { opacity:.3; }
 </style>
 </head>
 <body>
@@ -612,36 +544,37 @@ body {
 <!-- PROGRESS BAR -->
 <div id="prog-bar"><div id="prog-fill"></div></div>
 
-<!-- RACE BAR -->
+<!-- RACE BAR : numéro + nom en haut, timer en dessous -->
 <div id="race-bar">
   <button class="nav-btn" id="btn-prev" disabled title="Course précédente">‹</button>
   <div id="race-info">
     <div id="race-code">—</div>
     <div id="race-name">—</div>
     <div id="race-sub"></div>
-    <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
-      <span id="race-counter"></span>
-      <span style="width:1px;height:8px;background:var(--border2);flex-shrink:0;display:inline-block"></span>
-      <span id="ts">—</span>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+        <span id="race-counter"></span>
+        <span style="width:1px;height:8px;background:var(--border2);flex-shrink:0;display:inline-block"></span>
+        <span id="ts">—</span>
     </div>
   </div>
   <button class="nav-btn" id="btn-next" disabled title="Course suivante">›</button>
 </div>
 
-<!-- DÉPART BAR -->
+<!-- DÉPART BAR — centré, standalone -->
 <div id="depart-bar">
   <span id="cd-label">DÉPART</span>
   <span id="countdown">--:--</span>
-  <span id="watch-badge">👁 LIVE</span>
+  <span id="snap-badge">📸 SNAP</span>
 </div>
 
-<!-- TABLE HEADER : # | CHEVAL | LIVE | PREV | Δ5s -->
+
+<!-- TABLE HEADER -->
 <div id="th">
   <span>#</span>
   <span>CHEVAL</span>
-  <span style="text-align:right">LIVE</span>
-  <span style="text-align:right">PREV</span>
-  <span style="text-align:right">Δ5s</span>
+  <span style="text-align:right">COTE</span>
+  <span style="text-align:right">SNAP</span>
+  <span style="text-align:right">CHUTE</span>
 </div>
 
 <!-- PARTICIPANTS LIST -->
@@ -660,10 +593,10 @@ body {
 <script>
 'use strict';
 // ═══════════════════════════════════════════════════════
-//  TBlaugranaTurf — Front v3
-//  Logique GLISSANTE : référence = cote du poll précédent
-//  Alerte si chute ≥ 10% en 5s (fenêtre 2 min avant départ)
-//  Les alertes critiques tournent côté SERVEUR (H24).
+//  TBlaugranaTurf — Front v2
+//  Les notifications critiques tournent côté SERVEUR (H24).
+//  Le front affiche les cotes en temps réel + reçoit les
+//  alertes serveur pour les afficher dans l'interface.
 // ═══════════════════════════════════════════════════════
 
 const PMU_BASE_PROG  = '/api/pmu/prog';
@@ -671,34 +604,35 @@ const PMU_BASE_PARTS = '/api/pmu/parts';
 
 const CFG = {
   progRefreshSecs:  120,
-  windowSecs:       60,    // surveillance : 1 min avant le départ
-  pollMs:           5000,  // poll fixe 5s
-  fetchTimeoutMs:   4000,
+  snapSecs:         60,    // snapshot front (miroir du serveur)
+  fetchTimeoutMs:   1500,
+  parallelFetches:  2,
   progCacheTtlMs:   90000,
-  maxAlerts:        3,
-  dropPct:          10,    // seuil chute glissant %
+  maxAlerts:        10,
+  dropPct:          20,    // fixe — modifiable en dur ici si besoin
   tgMaxCote:        10,
 };
 
 let S = {
-  today:          '',
-  programme:      [],
-  curIdx:         -1,
-  manualIdx:      -1,
-  participants:   [],
-  // Référence glissante : cotes du dernier poll
-  prevCotes:      {},   // { numPmu: cote }
-  alertCount:     {},   // { numPmu: n } — nb chutes détectées par cheval
-  inWindow:       false,
-  alertTotal:     0,
-  tick:           0,
-  lastFetchMs:    0,
-  srvAlertsSeen:  new Set(),
+  today:        '',
+  programme:    [],
+  curIdx:       -1,
+  manualIdx:    -1,
+  participants: [],
+  snapCotes:    {},
+  snapDone:     false,
+  alertedDrop:  new Set(),
+  alertCount:   0,
+  audioOn:      true,
+  tick:         0,
+  lastFetchMs:  0,
+  srvAlertsSeen: new Set(), // timestamps des alertes serveur déjà affichées
 };
 
 const _progCache = {};
 let _fetchGeneration = 0;
 let _latencyHistory  = [];
+let _lastPartsHash   = '';
 const _etags = {};
 
 const pad = n => String(n).padStart(2, '0');
@@ -713,12 +647,22 @@ function datePmu(s) { return s.slice(6,8)+s.slice(4,6)+s.slice(0,4); }
 
 function addLatency(ms) { _latencyHistory.push(ms); if(_latencyHistory.length>10)_latencyHistory.shift(); }
 function avgLatency() { return _latencyHistory.length ? Math.round(_latencyHistory.reduce((a,b)=>a+b,0)/_latencyHistory.length) : 0; }
+function adaptiveTimeout() {
+  const avg=avgLatency();
+  if(_latencyHistory.length<3) return CFG.fetchTimeoutMs;
+  return Math.min(CFG.fetchTimeoutMs, Math.max(300, avg*3));
+}
+function hashParts(parts) {
+  return parts.filter(p=>p.statut==='PARTANT'&&p.dernierRapportDirect)
+    .map(p=>`${p.numPmu}:${p.dernierRapportDirect.rapport}`).join(',');
+}
 
 // ── AUDIO ──────────────────────────────────────────────
 let _ac=null;
 function getAC() { if(!_ac) _ac=new(window.AudioContext||window.webkitAudioContext)(); if(_ac.state==='suspended')_ac.resume(); return _ac; }
 document.addEventListener('click', ()=>{ try{getAC();}catch(_){} }, {once:true});
 function beep(freq=880,dur=150,type='sine') {
+  if(!S.audioOn) return;
   try {
     const ctx=getAC(),osc=ctx.createOscillator(),gain=ctx.createGain();
     osc.connect(gain);gain.connect(ctx.destination);
@@ -729,15 +673,16 @@ function beep(freq=880,dur=150,type='sine') {
   } catch(_){}
 }
 function alertBeep() { beep(1100,80); setTimeout(()=>beep(880,100),130); setTimeout(()=>beep(1300,220),290); }
-function enterWindowBeep() {
+function snapBeep() {
+  if(!S.audioOn) return;
   try {
     const ctx=getAC(),t=ctx.currentTime;
-    [[440,0],[550,.15],[660,.3]].forEach(([f,d])=>{
+    [[660,0],[880,.2],[1100,.42]].forEach(([f,d])=>{
       const o=ctx.createOscillator(),g=ctx.createGain();
       o.connect(g);g.connect(ctx.destination);
-      o.type='triangle';o.frequency.value=f;
-      g.gain.setValueAtTime(.15,t+d);g.gain.exponentialRampToValueAtTime(.001,t+d+.25);
-      o.start(t+d);o.stop(t+d+.28);
+      o.type='square';o.frequency.value=f;
+      g.gain.setValueAtTime(.18,t+d);g.gain.exponentialRampToValueAtTime(.001,t+d+.28);
+      o.start(t+d);o.stop(t+d+.3);
     });
   } catch(_){}
 }
@@ -774,7 +719,8 @@ async function loadProg() {
     S.programme=races.sort((a,b)=>a.depart-b.depart);
     S.lastProg=Date.now();
     setStatus(true);
-    return races.length>0;
+    if(races.length>0){ return true; }
+    return false;
   } catch(e) { console.warn('[PROG]', e.message); setStatus(false); return false; }
 }
 
@@ -788,38 +734,42 @@ function effectiveIdx() { return S.manualIdx>=0?S.manualIdx:findNext(); }
 function isAuto()       { return S.manualIdx<0; }
 
 function onRaceChange() {
-  // Reset état glissant
-  S.prevCotes={};
-  S.alertCount={};
-  S.inWindow=false;
-  S.participants=[];
-  document.getElementById('watch-badge').className='';
-  document.getElementById('watch-badge').style.display='none';
+  S.snapDone=false; S.snapCotes={}; S.alertedDrop.clear(); S.participants=[];
+  document.getElementById('snap-badge').style.display='none';
   document.getElementById('participants').innerHTML='';
   document.getElementById('prog-fill').style.width='0%';
   cotesLoop();
 }
 
-// ── SYNC ÉTAT DEPUIS SERVEUR ───────────────────────────
-// Récupère les cotes serveur si l'onglet était fermé pendant la fenêtre
-async function syncFromServer(race) {
+// ── SNAPSHOT (côté front — miroir de ce que fait le serveur) ──
+function doSnapshot() {
+  if(S.snapDone) return;
+  S.snapDone=true; S.snapCotes={};
+  for(const p of S.participants)
+    if(p.statut==='PARTANT'&&p.dernierRapportDirect) S.snapCotes[p.numPmu]=p.dernierRapportDirect.rapport;
+  S.alertedDrop.clear();
+  document.getElementById('snap-badge').style.display='block';
+  addAlert('snap','📸',`SNAPSHOT — ${Object.keys(S.snapCotes).length} chevaux`);
+  snapBeep();
+  renderTable();
+}
+
+// ── SYNC SNAPSHOT DEPUIS SERVEUR ──────────────────────
+// Si l'onglet était fermé pendant le snapshot, on récupère les cotes serveur.
+async function syncSnapFromServer(race) {
+  if(S.snapDone) return;
   const key=`R${race.reunion}C${race.course}`;
   try {
     const r=await fetch(`/api/snapstate?key=${key}`);
     if(!r.ok) return;
     const d=await r.json();
     if(d.done && Object.keys(d.cotes||{}).length>0) {
-      // Initialise prevCotes depuis les cotes serveur
-      for(const [num,cote] of Object.entries(d.cotes)) {
-        S.prevCotes[num]=cote;
-      }
-      // Restaure les compteurs d'alertes
-      if(d.alertCount) {
-        for(const [num,n] of Object.entries(d.alertCount)) {
-          if(n>0) S.alertCount[num]=n;
-        }
-      }
-      addAlert('info','🔄',`État restauré depuis serveur (${Object.keys(d.cotes).length} chevaux)`);
+      S.snapCotes=d.cotes;
+      S.snapDone=true;
+      // Restaure les alertes déjà déclenchées par le serveur
+      if(d.alerted) d.alerted.forEach(id=>S.alertedDrop.add(Number(id)));
+      document.getElementById('snap-badge').style.display='block';
+      addAlert('snap','🔄',`Snapshot restauré depuis serveur (${Object.keys(d.cotes).length} chevaux)`);
       renderTable();
     }
   } catch(_){}
@@ -836,8 +786,9 @@ async function pollSrvAlerts() {
       if(S.srvAlertsSeen.has(key)) continue;
       S.srvAlertsSeen.add(key);
       if(a.type==='drop') {
-        // FIX v6 : on affiche TOUTES les alertes serveur, sans filtre tgMaxCote
-        // (le serveur a déjà pris la décision d'alerter, on fait confiance)
+        const coteMatch = a.msg.match(/→(\d+(?:\.\d+)?)\s*\(/);
+        const coteFinal = coteMatch ? parseFloat(coteMatch[1]) : null;
+        if(coteFinal !== null && coteFinal > CFG.tgMaxCote) continue;
         const time = a.ts ? a.ts.slice(11,19) : timeNow();
         addAlertFromSrvMsg(a.msg, time);
         alertBeep();
@@ -851,166 +802,149 @@ async function pollSrvAlerts() {
   }
 }
 
-// ── DÉTECTION CHUTES GLISSANTES (front, pour UI) ──────
-// Appelée après chaque poll, compare curCotes vs prevCotes
-function checkDrops(curCotes) {
-  if(!S.inWindow) return;
-  if(Object.keys(S.prevCotes).length===0) return;
+// ── DÉTECTION CHUTES (front, pour UI temps-réel) ──────
+function checkDrops() {
+  if(!S.snapDone) return;
+  const minPct=CFG.dropPct;
+  const race=S.programme[effectiveIdx()];
+  const secsLeft=Math.round((race.depart-Date.now())/1000);
+  // Fenêtre : 60s avant → 3min après le départ
+  if(secsLeft>CFG.snapSecs) return;
+  if(secsLeft<-180) return;
 
   for(const p of S.participants) {
     if(p.statut!=='PARTANT'||!p.dernierRapportDirect) continue;
-    const num     = p.numPmu;
-    const prevC   = S.prevCotes[num];
-    const curC    = p.dernierRapportDirect.rapport;
-    if(!prevC||!curC||curC>=prevC) continue;
-
-    const drop=(prevC-curC)/prevC*100;
-    if(drop<CFG.dropPct) continue;
-    if(curC>CFG.tgMaxCote) continue;  // même filtre que le serveur
-
-    S.alertCount[num]=(S.alertCount[num]||0)+1;
-    // Flash visuel sur la ligne (le son/la carte vient de pollSrvAlerts pour éviter le doublon)
-    const row=document.getElementById(`row-${num}`);
-    if(row){
-      row.classList.add('dropping-strong');
-      setTimeout(()=>row.classList.remove('dropping-strong'),1200);
-    }
+    const snap=S.snapCotes[p.numPmu];
+    const cur=p.dernierRapportDirect.rapport;
+    if(!snap) continue;
+    const drop=(snap-cur)/snap*100;
+    if(drop<minPct||S.alertedDrop.has(p.numPmu)) continue;
+    // Ignorer les chevaux avec cote finale > tgMaxCote (même règle que Telegram)
+    if(cur>CFG.tgMaxCote) continue;
+    S.alertedDrop.add(p.numPmu);
+    // Pas d'addAlert ici — pollSrvAlerts gère l'affichage pour éviter le doublon
+    // On garde uniquement le flash visuel sur la ligne
+    const row=document.getElementById(`row-${p.numPmu}`);
+    if(row){row.classList.add('flash');setTimeout(()=>row.classList.remove('flash'),900);}
   }
 }
 
 // ── RENDU TABLE ───────────────────────────────────────
 function renderTable() {
+  const minPct=CFG.dropPct;
   const container=document.getElementById('participants');
-
-  // Tri : chevaux avec alerte en premier, puis par cote croissante
+  const getDrop=p=>{ const s=S.snapCotes[p.numPmu],c=p.dernierRapportDirect?.rapport; return(s!=null&&c!=null)?(s-c)/s*100:-9999; };
   const sorted=[...S.participants].sort((a,b)=>{
-    const aa=S.alertCount[a.numPmu]||0, bb=S.alertCount[b.numPmu]||0;
-    if(aa!==bb) return bb-aa;
-    return (a.dernierRapportDirect?.rapport??9999)-(b.dernierRapportDirect?.rapport??9999);
+    const da=getDrop(a),db=getDrop(b);
+    if(da!==-9999&&db!==-9999) return db-da;
+    if(da!==-9999) return -1;
+    if(db!==-9999) return 1;
+    return(a.dernierRapportDirect?.rapport??9999)-(b.dernierRapportDirect?.rapport??9999);
   });
-
-  // Filtre : affiche les chevaux cote ≤ tgMaxCote, ou ayant une alerte, ou avec chute visible
+  // Hide horses with cote > 10 UNLESS they dropped below 10 (were above, now below)
   const visible=sorted.filter(p=>{
-    if(p.statut==='NON_PARTANT') return false;
+    if(p.statut!=='PARTANT') return true; // non-partants always visible (dimmed)
     const cur=p.dernierRapportDirect?.rapport;
     if(cur==null) return false;
-    if(cur<=CFG.tgMaxCote) return true;
-    if((S.alertCount[p.numPmu]||0)>0) return true;
-    // FIX v6 : montre aussi les chevaux avec chute significative même si cote > filtre
-    const prev=S.prevCotes[p.numPmu];
-    if(prev&&cur<prev&&(prev-cur)/prev*100>=CFG.dropPct) return true;
+    const snap=S.snapCotes[p.numPmu];
+    // If current cote is <= 10, always show
+    if(cur<=10) return true;
+    // If snapshot was > 10 and current still > 10, hide
+    // But if snapshot was > 10 and current just crossed below, show (handled above)
     return false;
   });
-
   const visIds=new Set(visible.map(p=>`row-${p.numPmu}`));
   for(const row of [...container.children]) if(!visIds.has(row.id)) row.remove();
 
   for(let i=0;i<visible.length;i++) {
     const p=visible[i];
+    const np=p.statut==='NON_PARTANT';
     const fav=p.dernierRapportDirect?.favoris;
-    const curC=p.dernierRapportDirect?.rapport??'—';
-    const prevC=S.prevCotes[p.numPmu]??'—';
-    const alerts=S.alertCount[p.numPmu]||0;
-
-    // Calcul delta
-    let deltaTxt='—', deltaClass='flat', liveColor='var(--text)';
-    if(prevC!=='—'&&curC!=='—') {
-      const drop=(prevC-curC)/prevC*100;
-      if(drop>0) {
-        deltaTxt=`−${drop.toFixed(1)}%`;
-        if(drop>=CFG.dropPct)     { deltaClass='hot';    liveColor='var(--red)';    }
-        else if(drop>=5)           { deltaClass='warm';   liveColor='var(--orange)'; }
-        else if(drop>=2)           { deltaClass='slight'; liveColor='var(--yellow)'; }
-        else                       { deltaClass='slight'; }
-      } else if(drop<0) {
-        deltaTxt=`+${Math.abs(drop).toFixed(1)}%`;
-        deltaClass='up';
-      } else {
-        deltaTxt='='; deltaClass='flat';
-      }
+    const cd=p.dernierRapportDirect?.rapport??'—';
+    const snap=S.snapCotes[p.numPmu];
+    const cs=snap??'—';
+    // "appeared" = was hidden (snap > 10) but now dropped below 10
+    const appeared = snap!=null && snap>10 && cd!=='—' && cd<=10;
+    let cdColor='var(--text)',dropTxt='',dropClass='';
+    if(snap!=null&&cd!=='—') {
+      const dr=(snap-cd)/snap*100;
+      if(dr>0) { dropTxt=`−${dr.toFixed(1)}%`; if(dr>=minPct){cdColor='var(--green)';dropClass='hot';} else if(dr>=10){cdColor='var(--yellow)';dropClass='warm';} else dropClass='low'; }
+      else if(dr<0) { dropTxt=`+${Math.abs(dr).toFixed(1)}%`; dropClass='up'; }
+      else dropTxt='0%';
     }
-
-    const alertBadge=alerts>0?`<span class="alert-badge">🔥×${alerts}</span>`:'';
-
+    const appearedBadge = appeared ? `<span class="appeared-badge">↓</span>` : '';
     let row=document.getElementById(`row-${p.numPmu}`);
     if(!row) {
       row=document.createElement('div');
       row.id=`row-${p.numPmu}`;
-      row.className=`horse${fav?' fav':''}`;
-      row.innerHTML=`
-        <span class="hnum">${p.numPmu}</span>
-        <div><div class="hname">${p.nom}${alertBadge}</div></div>
-        <span class="clive" style="color:${liveColor}">${curC}</span>
-        <span class="cprev">${prevC}</span>
-        <span class="cdelta ${deltaClass}">${deltaTxt}</span>`;
+      row.className=`horse${np?' np':''}${fav?' fav':''}${appeared?' appeared':''}`;
+      row.innerHTML=`<span class="hnum">${p.numPmu}</span><div><div class="hname">${p.nom}${appearedBadge}</div></div><span class="cdirect" style="color:${cdColor}">${cd}</span><span class="csnap">${cs}</span><span class="cdrop ${dropClass}">${dropTxt||'—'}</span>`;
       container.appendChild(row);
     } else {
       const cells=row.children;
-      const nameDiv=cells[1].querySelector('.hname');
-      const celLive=cells[2], celPrev=cells[3], celDelta=cells[4];
-
-      // Mise à jour nom + badge
-      const newName=`${p.nom}${alertBadge}`;
-      if(nameDiv.innerHTML!==newName) nameDiv.innerHTML=newName;
-
-      // Flash si LIVE change
-      if(celLive.textContent!==String(curC)) {
-        celLive.textContent=String(curC);
-        celLive.classList.add('flash-cell');
-        setTimeout(()=>celLive.classList.remove('flash-cell'),400);
-      }
-      if(celLive.style.color!==liveColor) celLive.style.color=liveColor;
-      if(celPrev.textContent!==String(prevC)) celPrev.textContent=String(prevC);
-      if(celDelta.textContent!==deltaTxt) celDelta.textContent=deltaTxt;
-      if(celDelta.className!==`cdelta ${deltaClass}`) celDelta.className=`cdelta ${deltaClass}`;
+      const celCD=cells[2],celSnap=cells[3],celDrop=cells[4];
+      if(celCD.textContent!==String(cd)) celCD.textContent=String(cd);
+      if(celCD.style.color!==cdColor) celCD.style.color=cdColor;
+      if(celSnap.textContent!==String(cs)) celSnap.textContent=String(cs);
+      const dt=dropTxt||'—';
+      if(celDrop.textContent!==dt) celDrop.textContent=dt;
+      const dc=`cdrop ${dropClass}`;
+      if(celDrop.className!==dc) celDrop.className=dc;
     }
-
-    // Classe dropping si alerte récente
-    row.classList.toggle('dropping', alerts>0 && deltaClass!=='hot');
+    row.classList.toggle('alerted',S.alertedDrop.has(p.numPmu));
+    row.classList.toggle('appeared', appeared);
     if(container.children[i]!==row) container.insertBefore(row,container.children[i]||null);
   }
 }
 
 // ── ALERTES ───────────────────────────────────────────
 function addAlert(type, icon, msg, opts={}) {
+  // Masquer les alertes de chargement de programme
   if(type==='info' && (msg.startsWith('Programme :') || msg.includes('courses') || msg.startsWith('Aucun'))) return;
+  if(type==='snap' && msg.startsWith('[SRV]')) return;
 
-  const list=document.getElementById('alerts-list');
-  const item=document.createElement('div');
-  item.className=`aitem ${type}`;
+  const list = document.getElementById('alerts-list');
+  const item = document.createElement('div');
+  item.className = `aitem ${type}`;
 
-  if(type==='drop') {
+  if(type === 'drop') {
+    // Parse le message serveur : "[R2C1] NOM chute 34→26 (−24%)"
+    // ou message simple : "NOM — 34→26 (−24%)"
     const keyMatch  = msg.match(/^\[([^\]]+)\]\s*/);
-    const raceKey   = opts.raceKey||(keyMatch?keyMatch[1]:'');
-    const cleanMsg  = keyMatch?msg.slice(keyMatch[0].length):msg;
+    const raceKey   = opts.raceKey || (keyMatch ? keyMatch[1] : '');
+    const cleanMsg  = keyMatch ? msg.slice(keyMatch[0].length) : msg;
     const numMatch  = cleanMsg.match(/^(\d+)\s*[—–-]\s*/);
-    const horseNum  = opts.num||(numMatch?numMatch[1]:'');
-    const afterNum  = numMatch?cleanMsg.slice(numMatch[0].length):cleanMsg;
-    const nameMatch = afterNum.match(/^(.+?)\s+chute\s+([\d.]+)→([\d.]+)\s*\(([-−][\d.]+)%\)/);
-    const horseName = opts.name||(nameMatch?nameMatch[1]:afterNum);
-    const fromCote  = opts.from||(nameMatch?nameMatch[2]:'');
-    const toCote    = opts.to  ||(nameMatch?nameMatch[3]:'');
-    const dropPct   = opts.pct ||(nameMatch?nameMatch[4]:'');
-    const time      = opts.time||timeNow();
-    const countN    = opts.count||0;
+    const horseNum  = opts.num || (numMatch ? numMatch[1] : '');
+    const afterNum  = numMatch ? cleanMsg.slice(numMatch[0].length) : cleanMsg;
+    const nameMatch = afterNum.match(/^(.+?)\s+chute\s+([\d.]+)→([\d.]+)\s*\(([-−]\d+)%\)/);
+    const horseName = opts.name || (nameMatch ? nameMatch[1] : afterNum);
+    const fromCote  = opts.from || (nameMatch ? nameMatch[2] : '');
+    const toCote    = opts.to   || (nameMatch ? nameMatch[3] : '');
+    const dropPct   = opts.pct  || (nameMatch ? nameMatch[4] : '');
+    const hip       = opts.hip  || '';
+    const time      = opts.time || timeNow();
 
-    item.innerHTML=`
-      <div class="acard-line">
+    item.innerHTML = `
+      <div class="acard-header">
         <span class="acard-key">🚨 ${raceKey}</span>
-        ${horseNum?`<span class="acard-horse-num">${horseNum}</span>`:''}
-        <span class="acard-hname">${horseName}</span>
+        <span class="acard-time">${time}</span>
+      </div>
+      <div class="acard-body">
+        <div class="acard-horse">
+          ${horseNum ? `<span class="acard-horse-num">${horseNum}</span>` : ''}
+          <span>${horseName}</span>
+        </div>
         <div class="acard-cotes">
           <span class="acard-cote-from">${fromCote}</span>
-          <span class="acard-arrow">➡</span>
+          <span class="acard-arrow">➡️</span>
           <span class="acard-cote-to">${toCote}</span>
           <span class="acard-drop-pct">${dropPct}%</span>
         </div>
-        ${countN>1?`<span class="acard-count">×${countN}</span>`:''}
-        <span class="acard-time">${time}</span>
+        ${hip ? `<div class="acard-hip">📍 ${hip}</div>` : ''}
       </div>`;
-  } else if(type==='arrival') {
-    const time=opts.time||timeNow();
-    item.innerHTML=`
+  } else if(type === 'arrival') {
+    const time = opts.time || timeNow();
+    item.innerHTML = `
       <div class="acard-header">
         <span class="acard-key">🏁 ${opts.raceKey||''}</span>
         <span class="acard-time">${time}</span>
@@ -1027,76 +961,78 @@ function addAlert(type, icon, msg, opts={}) {
         </div>
       </div>`;
   } else {
-    item.innerHTML=`<div class="acard-body" style="padding:6px 10px"><span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">${timeNow()}</span> <span style="font-size:13px;color:var(--text2)">${icon} ${msg}</span></div>`;
+    item.innerHTML = `<div class="acard-body" style="padding:6px 10px"><span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">${timeNow()}</span> <span style="font-size:13px;color:var(--text2)">${icon} ${msg}</span></div>`;
   }
 
   list.prepend(item);
-  while(list.children.length>CFG.maxAlerts) list.removeChild(list.lastChild);
+  while(list.children.length > CFG.maxAlerts) list.removeChild(list.lastChild);
 
-  if(type!=='info') {
-    S.alertTotal++;
-    const badge=document.getElementById('abadge');
-    badge.textContent=S.alertTotal;
-    badge.style.display='inline';
+  if(type !== 'info') {
+    S.alertCount++;
+    const badge = document.getElementById('abadge');
+    badge.textContent = S.alertCount;
+    badge.style.display = 'inline';
   }
 }
-function clearAlerts() { document.getElementById('alerts-list').innerHTML=''; S.alertTotal=0; document.getElementById('abadge').style.display='none'; }
+function clearAlerts() { document.getElementById('alerts-list').innerHTML=''; S.alertCount=0; document.getElementById('abadge').style.display='none'; }
 
 // ── ARRIVÉE PROVISOIRE ────────────────────────────────
-const _arrivalSeen=new Set();
+// Vérifie si la course qui vient de se terminer a une arrivée provisoire
+const _arrivalSeen = new Set();
 async function checkArrival(race) {
-  const key=`R${race.reunion}C${race.course}`;
+  const key = `R${race.reunion}C${race.course}`;
   if(_arrivalSeen.has(key)) return;
   try {
-    const url=`/api/pmu/parts/programme/${datePmu(S.today)}/R${race.reunion}/C${race.course}/rapports-definitifs?specialisation=OFFLINE`;
-    const r=await fetch(url,{cache:'no-store'});
+    const url = `/api/pmu/parts/programme/${datePmu(S.today)}/R${race.reunion}/C${race.course}/rapports-definitifs?specialisation=OFFLINE`;
+    const r = await fetch(url, {cache:'no-store'});
     if(!r.ok) return;
-    const data=await r.json();
-    const rapports=data.rapports||data.listeRapports||[];
-    const arrivee=rapports.find(r=>r.typePari==='SIMPLE_GAGNANT'||r.combinaison);
+    const data = await r.json();
+    // Cherche l'arrivée dans les rapports
+    const rapports = data.rapports || data.listeRapports || [];
+    const arrivee = rapports.find(r => r.typePari==='SIMPLE_GAGNANT' || r.combinaison);
     if(!arrivee) return;
-    const nums=arrivee.combinaison||[];
+    const nums = arrivee.combinaison || [];
     if(!nums.length) return;
     _arrivalSeen.add(key);
-    const horses=nums.slice(0,4).map(n=>{
-      const p=S.participants.find(x=>x.numPmu===n);
-      return {num:n,name:p?p.nom.split(' ').slice(0,2).join(' '):`N°${n}`};
+    // Récupère les noms depuis S.participants (ou juste les numéros)
+    const horses = nums.slice(0,4).map(n => {
+      const p = S.participants.find(x => x.numPmu === n);
+      return { num: n, name: p ? p.nom.split(' ').slice(0,2).join(' ') : `N°${n}` };
     });
-    addAlert('arrival','🏁','',{raceKey:key,horses});
+    addAlert('arrival','🏁','', { raceKey: key, horses });
   } catch(_){}
 }
 
-// ── CHARGEMENT HISTORIQUE ALERTES ─────────────────────
+// ── CHARGEMENT HISTORIQUE ALERTES AU DÉMARRAGE ────────
 async function loadAlertHistory() {
   try {
-    const r=await fetch('/api/alerts');
+    const r = await fetch('/api/alerts');
     if(!r.ok) return;
-    const alerts=await r.json();
-    // FIX v6 : affiche tout l'historique serveur (persisté sur disque)
-    // sans filtre sur tgMaxCote — le serveur est la source de vérité
-    for(const a of [...alerts].reverse().slice(0, CFG.maxAlerts)) {
-      const key=a.ts+a.msg;
+    const alerts = await r.json();
+    // Affiche en ordre chronologique (le plus récent en dernier dans le tableau, premier à l'écran)
+    for(const a of [...alerts].reverse()) {
+      const key = a.ts + a.msg;
       S.srvAlertsSeen.add(key);
-      if(a.type!=='drop') continue;
-      const time=a.ts?a.ts.slice(11,19):'—';
-      addAlertFromSrvMsg(a.msg,time);
+      if(a.type !== 'drop') continue;
+      const coteMatch = a.msg.match(/→(\d+(?:\.\d+)?)\s*\(/);
+      const coteFinal = coteMatch ? parseFloat(coteMatch[1]) : null;
+      if(coteFinal !== null && coteFinal > CFG.tgMaxCote) continue;
+      const time = a.ts ? a.ts.slice(11,19) : '—';
+      addAlertFromSrvMsg(a.msg, time);
     }
   } catch(_){}
 }
 
-function addAlertFromSrvMsg(msg,time) {
-  const keyMatch=msg.match(/^\[([^\]]+)\]\s*/);
-  const raceKey=keyMatch?keyMatch[1]:'';
-  const rest=keyMatch?msg.slice(keyMatch[0].length):msg;
-  // Format v3 : "#3 NOMCHEVAL chute PREV→CUR (−X%) — alerte #N"
-  const numMatch=rest.match(/^#(\d+)\s+/);
-  const horseNum=numMatch?numMatch[1]:'';
-  const afterNum=numMatch?rest.slice(numMatch[0].length):rest;
-  const m=afterNum.match(/^(.+?)\s+chute\s+([\d.]+)→([\d.]+)\s*\(([-−][\d.]+)%\)/);
-  // NE PAS toucher S.alertCount ici — les flammes dans le tableau ne doivent
-  // apparaître que pendant la surveillance live (checkDrops), pas depuis l'historique serveur.
-  if(!m) { addAlert('drop','🔥',msg,{time}); return; }
-  addAlert('drop','🔥',msg,{raceKey,num:horseNum,name:m[1],from:m[2],to:m[3],pct:m[4],time});
+function addAlertFromSrvMsg(msg, time) {
+  // msg format: "[R2C1] NOM chute 34→26 (−24%)"
+  const keyMatch = msg.match(/^\[([^\]]+)\]\s*/);
+  const raceKey  = keyMatch ? keyMatch[1] : '';
+  const rest     = keyMatch ? msg.slice(keyMatch[0].length) : msg;
+  const m = rest.match(/^(.+?)\s+chute\s+([\d.]+)→([\d.]+)\s*\(([-−]\d+)%\)/);
+  if(!m) { addAlert('drop','🔥', msg, {time}); return; }
+  addAlert('drop','🔥', msg, {
+    raceKey, name: m[1], from: m[2], to: m[3], pct: m[4], time
+  });
 }
 
 // ── STATUS ────────────────────────────────────────────
@@ -1116,7 +1052,7 @@ document.getElementById('btn-next').onclick=()=>{ const i=effectiveIdx(); if(i<S
 let _lastAutoIdx=-1;
 function autoSwitch() { if(!isAuto()) return; const n=findNext(); if(n!==_lastAutoIdx){_lastAutoIdx=n;onRaceChange();} }
 
-// ── FETCH PARTICIPANTS avec ETag ──────────────────────
+// ── FETCH PARTICIPANTS ────────────────────────────────
 async function fetchPartsWithEtag(url,timeoutMs) {
   const ctrl=new AbortController(),id=setTimeout(()=>ctrl.abort(),timeoutMs);
   const headers={};
@@ -1133,84 +1069,87 @@ async function fetchPartsWithEtag(url,timeoutMs) {
   } catch(e) { clearTimeout(id); throw e; }
 }
 
-// ── BOUCLE COTES — poll fixe 5s ──────────────────────
+// ── BOUCLE COTES ─────────────────────────────────────
 async function cotesLoop() {
   const generation=++_fetchGeneration;
-  let syncDone=false;
+  _lastPartsHash='';
+
+  async function raceRequests(url,timeoutMs,n) {
+    if(n===1) return fetchPartsWithEtag(url,timeoutMs);
+    const controllers=Array.from({length:n},()=>new AbortController());
+    const makeOne=ctrl=>{
+      const id=setTimeout(()=>ctrl.abort(),timeoutMs);
+      const headers={};
+      if(_etags[url]) headers['If-None-Match']=_etags[url];
+      return fetch(url,{cache:'no-store',signal:ctrl.signal,headers}).then(r=>{
+        clearTimeout(id);
+        if(r.status===304) return null;
+        if(!r.ok) throw new Error(`HTTP ${r.status}`);
+        const etag=r.headers.get('ETag');
+        if(etag) _etags[url]=etag;
+        return r.json().then(d=>d.participants||[]);
+      });
+    };
+    try {
+      const result=await Promise.any(controllers.map(c=>makeOne(c)));
+      controllers.forEach(c=>{try{c.abort();}catch(_){}});
+      return result;
+    } catch(e) { controllers.forEach(c=>{try{c.abort();}catch(_){}});throw e; }
+  }
+
+  let prefetchPromise=null;
 
   while(true) {
     if(_fetchGeneration!==generation) return;
-    if(S.programme.length===0){ await sleep(200); continue; }
+    if(S.programme.length===0){ await new Promise(r=>setTimeout(r,200)); continue; }
 
     const race=S.programme[effectiveIdx()];
     const secsLeft=Math.round((race.depart-Date.now())/1000);
-    const nowInWindow=(secsLeft>=0&&secsLeft<=CFG.windowSecs);
-
-    // Entrée dans la fenêtre
-    if(nowInWindow&&!S.inWindow) {
-      S.inWindow=true;
-      enterWindowBeep();
-      const badge=document.getElementById('watch-badge');
-      badge.className='active';
-      badge.textContent='👁 SURVEILLANCE';
-      badge.style.display='inline-block';
-      // Sync serveur si l'onglet vient d'ouvrir
-      if(!syncDone) { syncDone=true; syncFromServer(race); }
-    }
-    if(!nowInWindow&&S.inWindow&&secsLeft<0) {
-      S.inWindow=false;
-      const badge=document.getElementById('watch-badge');
-      badge.className='done';
-      badge.textContent='✓ TERMINÉ';
-    }
-
+    const isCritical=secsLeft>0&&secsLeft<=CFG.snapSecs;
+    const nParallel=isCritical?3:CFG.parallelFetches;
+    const timeout=adaptiveTimeout();
     const url=`${PMU_BASE_PARTS}/programme/${datePmu(S.today)}/R${race.reunion}/C${race.course}/participants?specialisation=OFFLINE`;
     const t0=performance.now();
 
     try {
-      const parts=await fetchPartsWithEtag(url,CFG.fetchTimeoutMs);
+      const parts=prefetchPromise?await prefetchPromise:await raceRequests(url,timeout,nParallel);
+      prefetchPromise=null;
       if(_fetchGeneration!==generation) return;
       const ms=Math.round(performance.now()-t0);
+      prefetchPromise=raceRequests(url,adaptiveTimeout(),nParallel);
+
+      if(parts===null) {
+        document.getElementById('ts').innerHTML=`= ${timeNow()} <span style="color:var(--text3);font-weight:600">${ms}ms 304</span>`;
+        continue;
+      }
+
+      const newHash=hashParts(parts);
+      const unchanged=(newHash===_lastPartsHash);
+      _lastPartsHash=newHash;
       addLatency(ms);
       S.lastFetchMs=ms;
+      if(!unchanged) S.participants=parts;
       setStatus(true);
 
-      const latColor=ms<200?'#29c98a':ms<500?'#f5c842':'#f0445a';
+      const latColor=ms<100?'#29c98a':ms<300?'#f5c842':'#f0445a';
       document.getElementById('ts').innerHTML=`↻ ${timeNow()} <span style="color:${latColor};font-weight:600">${ms}ms</span>`;
 
-      if(parts!==null) {
-        S.participants=parts;
+      // Snapshot : uniquement via syncSnapFromServer (côté serveur, évite la duplication)
+      // doSnapshot() front supprimé — le serveur fait le snapshot et le front le récupère via /api/snapstate
 
-        // 1. Rendu avec prevCotes = poll d'AVANT → Δ5s visible
-        renderTable();
-
-        // 2. Détection chutes (compare cotes actuelles vs prevCotes d'avant)
-        if(nowInWindow) checkDrops();
-
-        // 3. On écrase la référence APRÈS le rendu
-        const newPrev={};
-        for(const p of parts) {
-          if(p.statut==='PARTANT'&&p.dernierRapportDirect?.rapport) {
-            newPrev[p.numPmu]=p.dernierRapportDirect.rapport;
-          }
-        }
-        S.prevCotes=newPrev;
-      }
+      if(!unchanged) { checkDrops(); renderTable(); }
     } catch(e) {
+      prefetchPromise=null;
       if(_fetchGeneration!==generation) return;
       setStatus(false);
       const ms=Math.round(performance.now()-t0);
       document.getElementById('ts').innerHTML=`⚠ ${timeNow()} <span style="color:var(--red)">${ms}ms ERR</span>`;
-      await sleep(500);
+      await new Promise(r=>setTimeout(r,500));
     }
-
-    await sleep(CFG.pollMs);
   }
 }
 
-function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
-
-// ── TICK (toutes les secondes) ────────────────────────
+// ── TICK ─────────────────────────────────────────────
 async function tick() {
   S.tick++;
   if(S.programme.length===0) return;
@@ -1227,17 +1166,25 @@ async function tick() {
 
   const cd=document.getElementById('countdown');
   cd.textContent=fmtCd(secsLeft);
+  cd.className=secsLeft<0?'':secsLeft<=30?'crit':secsLeft<=120?'warn':'';
+  // Correction : le countdown inline n'a pas de className géré par CSS séparé,
+  // on applique les couleurs directement sur le style
   if(secsLeft<0)        { cd.style.color='var(--text2)'; cd.style.animation=''; cd.style.textShadow='none'; }
-  else if(secsLeft<=30) { cd.style.color='var(--red)';    cd.style.animation='blink .45s infinite'; cd.style.textShadow='0 0 12px rgba(240,68,85,.4)'; }
-  else if(secsLeft<=60) { cd.style.color='var(--orange)'; cd.style.animation=''; cd.style.textShadow='0 0 12px rgba(240,120,64,.3)'; }
-  else                  { cd.style.color='var(--green)';  cd.style.animation=''; cd.style.textShadow='0 0 14px rgba(31,212,126,.35)'; }
+  else if(secsLeft<=30) { cd.style.color='var(--red)'; cd.style.animation='blink .45s infinite'; cd.style.textShadow='0 0 12px rgba(240,68,85,.4)'; }
+  else if(secsLeft<=120){ cd.style.color='var(--yellow)'; cd.style.animation=''; cd.style.textShadow='0 0 12px rgba(245,192,64,.3)'; }
+  else                  { cd.style.color='var(--green)'; cd.style.animation=''; cd.style.textShadow='0 0 14px rgba(31,212,126,.35)'; }
 
   const pct=Math.max(0,Math.min(100,(1-Math.max(0,secsLeft)/3600)*100));
   document.getElementById('prog-fill').style.width=pct+'%';
 
-  // Arrivée provisoire 2-10 min après le départ
-  const secsAfter=-secsLeft;
-  if(secsAfter>=120&&secsAfter<=600) checkArrival(race);
+  // Tente de récupérer le snapshot serveur si on arrive sur une course déjà snapshotée
+  if(secsLeft<=CFG.snapSecs&&!S.snapDone&&S.participants.length>0) {
+    syncSnapFromServer(race);
+  }
+
+  // Arrivée provisoire : vérifie 2min après le départ
+  const secsAfter = -secsLeft;
+  if(secsAfter >= 120 && secsAfter <= 600) checkArrival(race);
 
   // Refresh programme périodique
   if(S.tick%CFG.progRefreshSecs===0) {
@@ -1273,15 +1220,18 @@ async function boot() {
           const hip=ru.hippodrome?.libelleCourt||ru.hippodrome?.libelleLong||`R${ru.numOfficiel}`;
           for(const co of(ru.courses||[])) races.push({reunion:ru.numOfficiel,course:co.numOrdre,depart:co.heureDepart,libelle:co.libelle||co.libelleCourt||`Course ${co.numOrdre}`,hip,disc:co.discipline||co.specialite||''});
         }
-        if(races.length){S.today=ds;S.programme=races.sort((a,b)=>a.depart-b.depart);S.lastProg=Date.now();setStatus(true);break;}
+        if(races.length){S.today=ds;S.programme=races.sort((a,b)=>a.depart-b.depart);S.lastProg=Date.now();setStatus(true);addAlert('info','📅',`${jours[d.getDay()]} ${ds.slice(6)}/${ds.slice(4,6)} : ${races.length} courses`);break;}
       } catch(_){}
     }
+    if(S.programme.length===0){addAlert('info','⚠️','Aucun programme trouvé.');setStatus(false);}
   }
 
   if(S.programme.length>0){_lastAutoIdx=findNext();S.manualIdx=-1;updateNav();}
 
   document.getElementById('loading').style.display='none';
+  // Charge l'historique des alertes serveur (persistance au rechargement)
   await loadAlertHistory();
+  // Poll initial alertes serveur
   pollSrvAlerts();
   tick();
   setInterval(tick,1000);
