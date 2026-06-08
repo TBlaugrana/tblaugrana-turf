@@ -605,8 +605,8 @@ const PMU_BASE_PARTS = '/api/pmu/parts';
 const CFG = {
   progRefreshSecs:  120,
   snapSecs:         60,    // snapshot front (miroir du serveur)
-  fetchTimeoutMs:   3000,
-  parallelFetches:  1,
+  fetchTimeoutMs:   2000,
+  parallelFetches:  2,
   progCacheTtlMs:   90000,
   maxAlerts:        10,
   dropPct:          20,    // fixe — modifiable en dur ici si besoin
@@ -650,7 +650,7 @@ function avgLatency() { return _latencyHistory.length ? Math.round(_latencyHisto
 function adaptiveTimeout() {
   const avg=avgLatency();
   if(_latencyHistory.length<3) return CFG.fetchTimeoutMs;
-  return Math.min(CFG.fetchTimeoutMs, Math.max(800, avg*4));
+  return Math.min(CFG.fetchTimeoutMs, Math.max(400, avg*3));
 }
 function hashParts(parts) {
   return parts.filter(p=>p.statut==='PARTANT'&&p.dernierRapportDirect)
@@ -1106,7 +1106,7 @@ async function cotesLoop() {
     const race=S.programme[effectiveIdx()];
     const secsLeft=Math.round((race.depart-Date.now())/1000);
     const isCritical=secsLeft>0&&secsLeft<=CFG.snapSecs;
-    const nParallel=1;
+    const nParallel=isCritical?2:CFG.parallelFetches;
     const timeout=adaptiveTimeout();
     const url=`${PMU_BASE_PARTS}/programme/${datePmu(S.today)}/R${race.reunion}/C${race.course}/participants?specialisation=OFFLINE`;
     const t0=performance.now();
