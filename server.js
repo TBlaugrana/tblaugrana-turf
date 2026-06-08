@@ -27,7 +27,7 @@ const CFG = {
   tgToken:      process.env.TG_TOKEN   || '8961502220:AAGlpLomYVMXRQgrJsPp5M4m-omFPJPBKoU',
   tgChatIds:    (process.env.TG_CHATS  || '625118343,8288460384').split(',').map(s => s.trim()),
   tgMaxCote:    parseFloat(process.env.TG_MAX_COTE  || '10'),
-  dropPct:      parseFloat(process.env.DROP_PCT     || '15'),   // ← 15% (était 20%)
+  dropPct:      parseFloat(process.env.DROP_PCT     || '20'),
   snapSecs:     15,               // snapshot à 15s du départ
   postDepartMs: 3 * 60 * 1000,   // continue 3min après le départ
   pollMs:       700,              // hors zone critique
