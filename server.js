@@ -24,7 +24,7 @@ const CFG = {
   dropPct:      parseFloat(process.env.DROP_PCT     || '20'),
   snapSecs:     15,    // snapshot à 15s du départ
   postDepartMs: 3 * 60 * 1000,  // continue 3min après le départ (retards de départ)
-  pollMs:       4000,   // intervalle de polling en dehors de la zone critique
+  pollMs:       800,   // intervalle de polling en dehors de la zone critique
   pollCritMs:   800,   // intervalle dans la zone critique (< 90s)
 };
 
