@@ -24,8 +24,8 @@ const CFG = {
   dropPct:      parseFloat(process.env.DROP_PCT     || '20'),
   snapSecs:     15,    // snapshot à 15s du départ
   postDepartMs: 3 * 60 * 1000,  // continue 3min après le départ (retards de départ)
-  pollMs:       500,   // intervalle de polling en dehors de la zone critique
-  pollCritMs:   500,   // intervalle dans la zone critique (< 90s)
+  pollMs:       4000,   // intervalle de polling en dehors de la zone critique
+  pollCritMs:   800,   // intervalle dans la zone critique (< 90s)
 };
 
 const PMU_PROG  = 'https://online.turfinfo.api.pmu.fr/rest/client/61';
@@ -87,18 +87,26 @@ const pad = n => String(n).padStart(2, '0');
 function dateStr(d) { return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`; }
 function datePmu(s) { return s.slice(6,8)+s.slice(4,6)+s.slice(0,4); }
 
-async function fetchJson(url, timeoutMs = 6000) {
-  const ctrl = new AbortController();
-  const id   = setTimeout(() => ctrl.abort(), timeoutMs);
-  try {
-    const r = await fetch(url, {
-      signal:  ctrl.signal,
-      headers: { 'Accept':'application/json', 'User-Agent':'Mozilla/5.0' },
-    });
-    clearTimeout(id);
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return await r.json();
-  } catch(e) { clearTimeout(id); throw e; }
+async function fetchJson(url, timeoutMs = 6000, retries = 2) {
+  let lastErr;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const ctrl = new AbortController();
+    const id   = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const r = await fetch(url, {
+        signal:  ctrl.signal,
+        headers: { 'Accept':'application/json', 'User-Agent':'Mozilla/5.0' },
+      });
+      clearTimeout(id);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return await r.json();
+    } catch(e) {
+      clearTimeout(id);
+      lastErr = e;
+      if (attempt < retries) await new Promise(r => setTimeout(r, 200));
+    }
+  }
+  throw lastErr;
 }
 
 async function sendTelegram(text) {
