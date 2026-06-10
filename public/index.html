@@ -350,8 +350,8 @@ body {
 .cdrop.warm { color:var(--yellow); }
 .cdrop.low  { color:var(--text3); font-weight:400; }
 .cdrop.up   { color:var(--red); }
-.horse.appeared { background:rgba(245,192,64,.05); }
-.horse.appeared::before { width:3px; background:var(--yellow); }
+.horse.appeared { }
+.horse.appeared::before { }
 .horse.alerted { background:rgba(31,212,126,.04); }
 .horse.alerted::before { width:3px; background:var(--green); }
 
@@ -922,7 +922,7 @@ function renderTable() {
     const isWarnZone  = dr2 >= 12 && dr2 < 20;
     const isMoneyZone = dr2 >= 20;
     const nameBadge = isMoneyZone ? `<span class="badge-money">🤑</span>` : isWarnZone ? `<span class="badge-warn">⚠️</span>` : '';
-    const appearedBadge = appeared ? `<span class="appeared-badge">↓</span>` : '';
+    const appearedBadge = '';
     let row=document.getElementById(`row-${p.numPmu}`);
     if(!row) {
       row=document.createElement('div');
