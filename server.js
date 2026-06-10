@@ -23,11 +23,15 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── CONFIG ──────────────────────────────────────────────────────
+// Vérification des variables d'environnement critiques au démarrage
+if (!process.env.TG_TOKEN) console.warn('[CFG] ⚠ TG_TOKEN non défini — alertes Telegram désactivées');
+if (!process.env.TG_CHATS) console.warn('[CFG] ⚠ TG_CHATS non défini — alertes Telegram désactivées');
+
 const CFG = {
-  tgToken:      process.env.TG_TOKEN   || '8961502220:AAGlpLomYVMXRQgrJsPp5M4m-omFPJPBKoU',
-  tgChatIds:    (process.env.TG_CHATS  || '625118343,8288460384').split(',').map(s => s.trim()),
-  tgMaxCote:    parseFloat(process.env.TG_MAX_COTE  || '10'),
-  dropPct:      parseFloat(process.env.DROP_PCT     || '20'),
+  tgToken:      process.env.TG_TOKEN  || '',
+  tgChatIds:    (process.env.TG_CHATS || '').split(',').map(s => s.trim()).filter(Boolean),
+  tgMaxCote:    parseFloat(process.env.TG_MAX_COTE || '10'),
+  dropPct:      parseFloat(process.env.DROP_PCT    || '15'),  // 15% cohérent avec les commentaires
   snapSecs:     15,               // snapshot à 15s du départ
   postDepartMs: 3 * 60 * 1000,   // continue 3min après le départ
   pollMs:       700,              // hors zone critique
@@ -130,6 +134,7 @@ async function fetchJson(url, timeoutMs = 4000, retries = 1) {
 }
 
 async function sendTelegram(text) {
+  if (!CFG.tgToken || CFG.tgChatIds.length === 0) return; // token/chats non configurés
   const url = `https://api.telegram.org/bot${CFG.tgToken}/sendMessage`;
   for (const chatId of CFG.tgChatIds) {
     try {
@@ -206,7 +211,7 @@ function pollDelay(secsLeft) {
 // Vérifie si une course est encore dans la fenêtre de surveillance
 function isRaceActive(race) {
   const ms = race.depart - Date.now();
-  return ms <= (CFG.snapSecs * 1000 + 10000) && ms >= -CFG.postDepartMs;
+  return ms <= (CFG.snapSecs * 1000 + 60000) && ms >= -CFG.postDepartMs; // 60s buffer (was 10s) pour couvrir les redémarrages
 }
 
 async function watchRace(race) {
@@ -295,16 +300,21 @@ async function watchRaceLoop(race) {
 
 // Boucle principale : gère le programme et lance les boucles par course
 async function watcherLoop() {
-  let progLoaded   = false;
   let lastProgLoad = 0;
 
   while (true) {
     const now = Date.now();
 
     // Recharge le programme toutes les 5 minutes ou si vide
-    if (!progLoaded || watcher.programme.length === 0 || now - lastProgLoad > 5 * 60_000) {
-      progLoaded   = await loadProgramme();
-      lastProgLoad = now;
+    // Note: on recharge si watcher.programme est vide, même si le chargement précédent a échoué
+    if (watcher.programme.length === 0 || now - lastProgLoad > 5 * 60_000) {
+      const ok = await loadProgramme();
+      if (ok) lastProgLoad = now;
+      else if (watcher.programme.length === 0) {
+        // Aucun programme chargé — réessai dans 30s
+        await new Promise(r => setTimeout(r, 30_000));
+        continue;
+      }
     }
 
     // Lance une boucle dédiée pour chaque nouvelle course active
