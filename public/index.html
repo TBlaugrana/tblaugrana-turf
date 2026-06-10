@@ -1007,12 +1007,10 @@ async function loadAlertHistory() {
     for(const a of [...alerts].reverse()) {
       const key = a.ts + a.msg;
       S.srvAlertsSeen.add(key);
-      if(a.type !== 'drop') continue;
-      const coteMatch = a.msg.match(/→(\d+(?:\.\d+)?)\s*\(/);
-      const coteFinal = coteMatch ? parseFloat(coteMatch[1]) : null;
-      if(coteFinal !== null && coteFinal > CFG.tgMaxCote) continue;
+      // Le serveur filtre déjà selon dropPct — on affiche toutes les alertes reçues
       const time = a.ts ? a.ts.slice(11,19) : '—';
-      addAlertFromSrvMsg(a.msg, time);
+      if(a.type === 'drop') addAlertFromSrvMsg(a.msg, time);
+      else if(a.type === 'snap') addAlert('snap', a.icon || '📸', a.msg, {time});
     }
   } catch(_){}
 }
@@ -1160,13 +1158,9 @@ async function tick() {
 
   const cd=document.getElementById('countdown');
   cd.textContent=fmtCd(secsLeft);
-  cd.className=secsLeft<0?'':secsLeft<=30?'crit':secsLeft<=120?'warn':'';
-  // Correction : le countdown inline n'a pas de className géré par CSS séparé,
-  // on applique les couleurs directement sur le style
-  if(secsLeft<0)        { cd.style.color='var(--text2)'; cd.style.animation=''; cd.style.textShadow='none'; }
-  else if(secsLeft<=30) { cd.style.color='var(--red)'; cd.style.animation='blink .45s infinite'; cd.style.textShadow='0 0 12px rgba(240,68,85,.4)'; }
-  else if(secsLeft<=120){ cd.style.color='var(--yellow)'; cd.style.animation=''; cd.style.textShadow='0 0 12px rgba(245,192,64,.3)'; }
-  else                  { cd.style.color='var(--green)'; cd.style.animation=''; cd.style.textShadow='0 0 14px rgba(31,212,126,.35)'; }
+  // className suffit — les règles CSS #countdown.warn/.crit gèrent couleur et animation
+  cd.className=secsLeft<0?'past':secsLeft<=30?'crit':secsLeft<=120?'warn':'';
+  cd.style.cssText=''; // reset tout inline style résiduel
 
   const pct=Math.max(0,Math.min(100,(1-Math.max(0,secsLeft)/3600)*100));
   document.getElementById('prog-fill').style.width=pct+'%';
