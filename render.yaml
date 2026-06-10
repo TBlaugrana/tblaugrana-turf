@@ -14,5 +14,5 @@ services:
       - key: TG_MAX_COTE
         value: "10"
       - key: DROP_PCT
-        value: "15"          # seuil 15% (cohérent avec les commentaires)
+        value: "20"          # seuil 20%
 
