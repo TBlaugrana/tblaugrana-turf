@@ -57,13 +57,13 @@ body {
 #header {
   background: linear-gradient(180deg, #141c34 0%, #0f1322 100%);
   border-bottom: 1px solid rgba(61,142,240,.2);
-  padding: 9px 12px 8px;
+  padding: 12px 12px 11px;
   display: flex;
   align-items: center;
   flex-shrink: 0;
   position: relative;
   gap: 8px;
-  min-height: 46px;
+  min-height: 58px;
 }
 #header::after {
   content: '';
@@ -78,10 +78,10 @@ body {
   justify-content: center;
   gap: 6px;
 }
-.logo-horse { font-size: 18px; line-height: 1; }
+.logo-horse { font-size: 22px; line-height: 1; }
 .logo {
   font-family: var(--font-ui);
-  font-size: 20px;
+  font-size: 26px;
   font-weight: 700;
   letter-spacing: 3px;
   background: linear-gradient(135deg, #5ba3ff 0%, #3d8ef0 45%, #1fd47e 100%);
@@ -99,20 +99,20 @@ body {
 }
 #status-dot.err { background:var(--red); box-shadow:0 0 6px var(--red); animation:none; }
 
-/* ── SERVER STATUS pill ── */
+/* ── SERVER STATUS — petit cercle coloré, sans texte ── */
 #srv-status {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  padding: 2px 6px;
-  border-radius: 8px;
-  letter-spacing: 1px;
   flex-shrink: 0;
-  background: rgba(31,212,126,.1);
-  border: 1px solid rgba(31,212,126,.25);
-  color: var(--green);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(31,212,126,.85);
+  border: 1px solid rgba(31,212,126,.5);
+  box-shadow: 0 0 5px rgba(31,212,126,.4);
+  font-size: 0;
+  overflow: hidden;
   transition: all .3s;
 }
-#srv-status.off { background:rgba(240,68,85,.08); border-color:rgba(240,68,85,.25); color:var(--red); }
+#srv-status.off { background:rgba(240,68,85,.85); border-color:rgba(240,68,85,.5); box-shadow:0 0 5px rgba(240,68,85,.4); }
 
 /* ── PROGRESS BAR ── */
 #prog-bar { height: 2px; background: rgba(255,255,255,.03); flex-shrink:0; }
@@ -197,6 +197,7 @@ body {
   padding: 7px 12px;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   flex-shrink: 0;
 }
