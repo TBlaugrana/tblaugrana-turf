@@ -843,7 +843,7 @@ function renderTable() {
   });
   // Hide horses with cote > 10 UNLESS they dropped below 10 (were above, now below)
   const visible=sorted.filter(p=>{
-    if(p.statut!=='PARTANT') return true; // non-partants always visible (dimmed)
+    if(p.statut!=='PARTANT') return false; // non-partants masqués
     const cur=p.dernierRapportDirect?.rapport;
     if(cur==null) return false;
     const snap=S.snapCotes[p.numPmu];
