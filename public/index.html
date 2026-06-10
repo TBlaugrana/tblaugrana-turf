@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="TBlaugranaTurf">
 <meta name="theme-color" content="#0b0f1a">
 <title>TBlaugranaTurf</title>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Rajdhani:wght@400;600;700&family=Cinzel:wght@700;900&display=swap" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230b0f1a'/%3E%3Ctext y='50' x='5' font-size='50'%3E🐎%3C/text%3E%3C/svg%3E">
 <style>
 :root {
@@ -56,38 +56,82 @@ body {
 /* ── HEADER ── */
 #header {
   background: linear-gradient(180deg, #141c34 0%, #0f1322 100%);
-  border-bottom: 1px solid rgba(61,142,240,.2);
-  padding: 12px 12px 11px;
+  border-bottom: 1px solid rgba(200,168,75,0.2);
+  padding: 0 12px;
   display: flex;
   align-items: center;
   flex-shrink: 0;
   position: relative;
   gap: 8px;
-  min-height: 58px;
+  min-height: 74px;
+  overflow: hidden;
+}
+#header::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(200,168,75,.7) 50%, transparent 100%);
 }
 #header::after {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(91,163,255,.4) 50%, transparent 100%);
+  bottom: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(200,168,75,.3) 50%, transparent 100%);
 }
+.logo-horse-bg {
+  position: absolute;
+  font-size: 58px;
+  line-height: 1;
+  opacity: .07;
+  user-select: none;
+  pointer-events: none;
+}
+.logo-horse-bg.left  { left: 18px; }
+.logo-horse-bg.right { right: 30px; transform: scaleX(-1); display: inline-block; }
 .logo-wrap {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
+  position: relative;
+  z-index: 1;
+}
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 .logo-horse { font-size: 22px; line-height: 1; }
 .logo {
-  font-family: var(--font-ui);
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: 3px;
-  background: linear-gradient(135deg, #5ba3ff 0%, #3d8ef0 45%, #1fd47e 100%);
+  font-family: 'Cinzel', 'Rajdhani', serif;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 7px;
+  background: linear-gradient(135deg, #f5d060 0%, #c8a84b 30%, #ffe680 55%, #b8860b 75%, #f5d060 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  line-height: 1.1;
+}
+.logo-sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.logo-sub-line {
+  height: 1px;
+  width: 50px;
+}
+.logo-sub-line.left  { background: linear-gradient(90deg, transparent, rgba(200,168,75,.5)); }
+.logo-sub-line.right { background: linear-gradient(90deg, rgba(200,168,75,.5), transparent); }
+.logo-sub-text {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 5px;
+  color: rgba(200,168,75,.6);
+  text-transform: uppercase;
 }
 #status-dot {
   width: 6px; height: 6px;
@@ -99,20 +143,7 @@ body {
 }
 #status-dot.err { background:var(--red); box-shadow:0 0 6px var(--red); animation:none; }
 
-/* ── SERVER STATUS — petit cercle coloré, sans texte ── */
-#srv-status {
-  flex-shrink: 0;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: rgba(31,212,126,.85);
-  border: 1px solid rgba(31,212,126,.5);
-  box-shadow: 0 0 5px rgba(31,212,126,.4);
-  font-size: 0;
-  overflow: hidden;
-  transition: all .3s;
-}
-#srv-status.off { background:rgba(240,68,85,.85); border-color:rgba(240,68,85,.5); box-shadow:0 0 5px rgba(240,68,85,.4); }
+/* srv-status removed */
 
 /* ── PROGRESS BAR ── */
 #prog-bar { height: 2px; background: rgba(255,255,255,.03); flex-shrink:0; }
@@ -539,12 +570,20 @@ input[type=number]::-webkit-outer-spin-button { opacity:.3; }
 
 <!-- HEADER -->
 <div id="header">
+  <span class="logo-horse-bg left">🐎</span>
+  <span class="logo-horse-bg right">🐎</span>
   <div class="logo-wrap">
-    <span class="logo-horse">🐎</span>
-    <span class="logo">TBlaugranaTurf</span>
-    <span class="logo-horse" style="transform:scaleX(-1);display:inline-block">🐎</span>
+    <div class="logo-row">
+      <span class="logo-horse">🐎</span>
+      <span class="logo">TBlaugrana</span>
+      <span class="logo-horse" style="transform:scaleX(-1);display:inline-block">🐎</span>
+    </div>
+    <div class="logo-sub">
+      <div class="logo-sub-line left"></div>
+      <span class="logo-sub-text">Turf</span>
+      <div class="logo-sub-line right"></div>
+    </div>
   </div>
-  <span id="srv-status">SRV ●</span>
   <div id="status-dot"></div>
 </div>
 
