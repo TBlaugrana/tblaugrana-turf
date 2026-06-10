@@ -3,14 +3,14 @@
 //  • Proxy PMU (contourne CORS)
 //  • Moteur de surveillance H24 côté serveur
 //    → snapshot auto à 15s du départ
-//    → détection chute de cote ≥ 15%
+//    → détection chute de cote ≥ 20%
 //    → alertes Telegram même onglet fermé
 //  OPTIMISATIONS v2.1 :
 //    → Boucle indépendante par course (pas de blocage inter-courses)
 //    → ETag côté fetchJson interne (évite de parser si données inchangées)
 //    → Timeout réduit 4000ms + 1 seul retry
 //    → Polling 300ms zone critique (<90s), 400ms zone hot (<30s)
-//    → Seuil alerte abaissé à 15%
+//    → Seuil alerte relevé à 20%
 // ═══════════════════════════════════════════════════════════════
 
 const express = require('express');
@@ -31,7 +31,7 @@ const CFG = {
   tgToken:      process.env.TG_TOKEN  || '',
   tgChatIds:    (process.env.TG_CHATS || '').split(',').map(s => s.trim()).filter(Boolean),
   tgMaxCote:    parseFloat(process.env.TG_MAX_COTE || '10'),
-  dropPct:      parseFloat(process.env.DROP_PCT    || '15'),  // 15% cohérent avec les commentaires
+  dropPct:      parseFloat(process.env.DROP_PCT    || '20'),  // 20%
   snapSecs:     15,               // snapshot à 15s du départ
   postDepartMs: 3 * 60 * 1000,   // continue 3min après le départ
   pollMs:       700,              // hors zone critique
