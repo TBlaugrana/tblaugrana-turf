@@ -8,10 +8,11 @@ services:
     healthCheckPath: /health
     envVars:
       - key: TG_TOKEN
-        value: 8961502220:AAGlpLomYVMXRQgrJsPp5M4m-omFPJPBKoU
+        sync: false          # ← à définir dans le dashboard Render (secret)
       - key: TG_CHATS
-        value: "625118343,8288460384"
+        sync: false          # ← à définir dans le dashboard Render (secret)
       - key: TG_MAX_COTE
         value: "10"
       - key: DROP_PCT
-        value: "20"
+        value: "15"          # seuil 15% (cohérent avec les commentaires)
+
