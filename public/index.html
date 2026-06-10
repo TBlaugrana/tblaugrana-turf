@@ -12,20 +12,20 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230b0f1a'/%3E%3Ctext y='50' x='5' font-size='50'%3E🐎%3C/text%3E%3C/svg%3E">
 <style>
 :root {
-  --bg:        #0a0d18;
-  --surface:   #0f1322;
-  --surface2:  #141929;
-  --surface3:  #0c1020;
-  --border:    #1c2238;
-  --border2:   #243050;
-  --accent:    #3d8ef0;
-  --accent2:   #5ba3ff;
-  --green:     #1fd47e;
-  --red:       #f04455;
-  --yellow:    #f5c040;
-  --text:      #cdd8f0;
-  --text2:     #6880b0;
-  --text3:     #37456a;
+  --bg:        #16273a;
+  --surface:   #1e3550;
+  --surface2:  #1c3048;
+  --surface3:  #132234;
+  --border:    #2e4d6a;
+  --border2:   #3a6080;
+  --accent:    #4a9eff;
+  --accent2:   #6eb3ff;
+  --green:     #00e676;
+  --red:       #ff6b80;
+  --yellow:    #ffd166;
+  --text:      #e8f4ff;
+  --text2:     #7aaad4;
+  --text3:     #5a8ab0;
   --r:         8px;
   --font-mono: 'JetBrains Mono', monospace;
   --font-ui:   'Rajdhani', sans-serif;
@@ -282,9 +282,15 @@ body {
   background: var(--accent);
   transition: width .15s;
 }
-.horse:active { background: rgba(61,142,240,.05); }
+.horse:active { background: rgba(74,158,255,.05); }
 .horse.np { opacity:.2; text-decoration:line-through; }
-.horse.fav .hname { color:var(--yellow); }
+.horse.warn-zone { background: #2a2010 !important; }
+.horse.warn-zone::before { width:3px; background:var(--yellow); }
+.horse:nth-child(odd)  { background: var(--surface2); }
+.horse:nth-child(even) { background: var(--bg); }
+.hname-wrap { display:flex; align-items:center; gap:5px; min-width:0; overflow:hidden; }
+.badge-warn  { font-size:13px; flex-shrink:0; line-height:1; }
+.badge-money { font-size:14px; flex-shrink:0; line-height:1; }
 .hnum {
   font-family: var(--font-mono);
   font-size: 13px;
@@ -872,13 +878,17 @@ function renderTable() {
       else if(dr<0) { dropTxt=`+${Math.abs(dr).toFixed(1)}%`; dropClass='up'; }
       else dropTxt='0%';
     }
+    const dr2 = (snap!=null && cd!=='—') ? (snap-cd)/snap*100 : 0;
+    const isWarnZone  = dr2 >= 12 && dr2 < 20;
+    const isMoneyZone = dr2 >= 20;
+    const nameBadge = isMoneyZone ? `<span class="badge-money">🤑</span>` : isWarnZone ? `<span class="badge-warn">⚠️</span>` : '';
     const appearedBadge = appeared ? `<span class="appeared-badge">↓</span>` : '';
     let row=document.getElementById(`row-${p.numPmu}`);
     if(!row) {
       row=document.createElement('div');
       row.id=`row-${p.numPmu}`;
-      row.className=`horse${np?' np':''}${fav?' fav':''}${appeared?' appeared':''}`;
-      row.innerHTML=`<span class="hnum">${p.numPmu}</span><div><div class="hname">${p.nom}${appearedBadge}</div></div><span class="cdirect" style="color:${cdColor}">${cd}</span><span class="csnap">${cs}</span><span class="cdrop ${dropClass}">${dropTxt||'—'}</span>`;
+      row.className=`horse${np?' np':''}${appeared?' appeared':''}`;
+      row.innerHTML=`<span class="hnum">${p.numPmu}</span><div class="hname-wrap"><div class="hname">${p.nom}${appearedBadge}</div>${nameBadge}</div><span class="cdirect" style="color:${cdColor}">${cd}</span><span class="csnap">${cs}</span><span class="cdrop ${dropClass}">${dropTxt||'—'}</span>`;
       container.appendChild(row);
     } else {
       const cells=row.children;
@@ -890,8 +900,14 @@ function renderTable() {
       if(celDrop.textContent!==dt) celDrop.textContent=dt;
       const dc=`cdrop ${dropClass}`;
       if(celDrop.className!==dc) celDrop.className=dc;
+      // Mise à jour badge
+      const nameWrap=cells[1];
+      const existBadge=nameWrap.querySelector('.badge-warn,.badge-money');
+      if(existBadge) existBadge.remove();
+      if(nameBadge) nameWrap.insertAdjacentHTML('beforeend', nameBadge);
     }
-    row.classList.toggle('alerted',S.alertedDrop.has(p.numPmu));
+    row.classList.toggle('alerted', S.alertedDrop.has(p.numPmu));
+    row.classList.toggle('warn-zone', isWarnZone && !S.alertedDrop.has(p.numPmu));
     row.classList.toggle('appeared', appeared);
     if(container.children[i]!==row) container.insertBefore(row,container.children[i]||null);
   }
